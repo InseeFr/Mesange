@@ -1,0 +1,339 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ***********************************************************************************************************************
+// ***** Construction du TEE                                                                                         *****
+// ***********************************************************************************************************************
+   // Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+
+   // Ajout du TEE
+      ACCESS don0 id .\BDD\don1b.frm    type formdata mode r; SEARCH don0;
+      ACCESS don  id .\BDD\don1c.frm    type formdata mode c; SEARCH don;
+      DO DFDELETE("don",">");
+      DO DFCOPY'F ("don0","don");
+      DELSEARCH don0; DELACCESS don0;
+
+// ***********************************************************************************************************************
+// ***** Construction de séries pour le TEE                                                                          *****
+// ***********************************************************************************************************************
+   // Création des agrégats du TEE
+      DO lis_tee3=C.("tc_d11","tc_d121","tc_d122","tc_d29","tc_d39","tc_d292","tc_d291");
+      &execmd "do don_@(lis_tee3)_dai3 = don_@(lis_tee3)_az3+don_@(lis_tee3)_c13+don_@(lis_tee3)_c33+don_@(lis_tee3)_c43+don_@(lis_tee3)_c53" ";";  // agriculture+industrie
+      &execmd "do don_@(lis_tee3)_nrj3 = don_@(lis_tee3)_de3+don_@(lis_tee3)_c23"                                              ";";                 // énergie
+      &execmd "do don_@(lis_tee3)_dse3 = don_@(lis_tee3)_hz3+don_@(lis_tee3)_jz3+don_@(lis_tee3)_kz3+don_@(lis_tee3)_mn3"                ";";       // services exposés
+      &execmd "do don_@(lis_tee3)_dsa3 = don_@(lis_tee3)_fz3+don_@(lis_tee3)_gz3+don_@(lis_tee3)_iz3+don_@(lis_tee3)_lz3+don_@(lis_tee3)_ru3" ";";  // services abrités
+      &execmd "do don_@(lis_tee3)_dsn3 = don_@(lis_tee3)_oq3" ";";        
+      DO don_tc_d12_d3    = don_tc_d121_d3   + don_tc_d122_d3   ;
+      DO don_tc_d12_az3   = don_tc_d121_az3  + don_tc_d122_az3  ;
+      DO don_tc_d12_dai3  = don_tc_d121_dai3 + don_tc_d122_dai3 ;
+      DO don_tc_d12_dse3  = don_tc_d121_dse3 + don_tc_d122_dse3 ;
+      DO don_tc_d12_dsa3  = don_tc_d121_dsa3 + don_tc_d122_dsa3 ;
+      DO don_tc_d12_nrj3  = don_tc_d121_nrj3 + don_tc_d122_nrj3 ;
+      DO don_tc_d12_dsn3  = don_tc_d121_dsn3 + don_tc_d122_dsn3 ;
+      DO don_tc_d1_d3     = don_tc_d11_d3    + don_tc_d12_d3    ;
+      DO don_tc_d1_dai3   = don_tc_d11_dai3  + don_tc_d12_dai3  ;
+      DO don_tc_d1_dse3   = don_tc_d11_dse3  + don_tc_d12_dse3  ;
+      DO don_tc_d1_dsa3   = don_tc_d11_dsa3  + don_tc_d12_dsa3  ;
+      DO don_tc_d1_nrj3   = don_tc_d11_nrj3  + don_tc_d12_nrj3  ;
+      DO don_tc_d1_dsn3   = don_tc_d11_dsn3  + don_tc_d12_dsn3  ;
+      DO don_tc_d239_d3   = don_tc_d29_d3    + don_tc_d39_d3    ;
+      DO don_tc_d239_dai3 = don_tc_d29_dai3  + don_tc_d39_dai3  ;
+      DO don_tc_d239_dse3 = don_tc_d29_dse3  + don_tc_d39_dse3  ;
+      DO don_tc_d239_dsa3 = don_tc_d29_dsa3  + don_tc_d39_dsa3  ;
+      DO don_tc_d239_nrj3 = don_tc_d29_nrj3  + don_tc_d39_nrj3  ;
+      DO don_tc_d239_dsn3 = don_tc_d29_dsn3  + don_tc_d39_dsn3  ;
+      
+ 	
+      DO lis_tee1=C.("tc_emps","tc_empns");
+      &execmd "do don_@(lis_tee1)_dai1 =  don_@(lis_tee1)_az1+don_@(lis_tee1)_c11+don_@(lis_tee1)_c31+don_@(lis_tee1)_c41+don_@(lis_tee1)_c51" ";";     // agriculture+industrie
+      &execmd "do don_@(lis_tee1)_dai7 =  don_@(lis_tee1)_az7+don_@(lis_tee1)_c17+don_@(lis_tee1)_c37+don_@(lis_tee1)_c47+don_@(lis_tee1)_c57" ";";     // agriculture+industrie
+      &execmd "do don_@(lis_tee1)_nrj1 =  don_@(lis_tee1)_de1+don_@(lis_tee1)_c21"                                              ";";                 // énergie
+      &execmd "do don_@(lis_tee1)_nrj7 =  don_@(lis_tee1)_de7+don_@(lis_tee1)_c27"                                              ";";                 // énergie
+      &execmd "do don_@(lis_tee1)_dse1 =  don_@(lis_tee1)_hz1+don_@(lis_tee1)_jz1+don_@(lis_tee1)_kz1+don_@(lis_tee1)_mn1"                ";";         // services exposés
+      &execmd "do don_@(lis_tee1)_dse7 =  don_@(lis_tee1)_hz7+don_@(lis_tee1)_jz7+don_@(lis_tee1)_kz7+don_@(lis_tee1)_mn7"                ";";         // services exposés
+      &execmd "do don_@(lis_tee1)_dsa1 =  don_@(lis_tee1)_fz1+don_@(lis_tee1)_gz1+don_@(lis_tee1)_iz1+don_@(lis_tee1)_lz1+don_@(lis_tee1)_ru1" ";";     // services abrités
+      &execmd "do don_@(lis_tee1)_dsa7 =  don_@(lis_tee1)_fz7+don_@(lis_tee1)_gz7+don_@(lis_tee1)_iz7+don_@(lis_tee1)_lz7+don_@(lis_tee1)_ru7" ";";     // services abrités
+      &execmd "do don_@(lis_tee1)_dsn1 =  don_@(lis_tee1)_oq1" ";";                                                                                 // services non marchands
+      &execmd "do don_@(lis_tee1)_dsn7 =  don_@(lis_tee1)_oq7" ";";                                                                                 // services non marchands
+
+   // Création de variables
+      // Emploi total = salarié + non salarié
+         DO don_tc_emp_d1 = tc_emps_d1 + tc_empns_d1 ;
+         DO don_tc_emp_d7 = tc_emps_d7 + tc_empns_d7 ;
+   
+      // Emploi SMNA = total - agricole - non marchand
+         DO don_tc_emps_smna1 = don_tc_emps_d1-don_tc_emps_az1-don_tc_emps_dsn1 ;
+         DO don_tc_emps_smna7 = don_tc_emps_d7-don_tc_emps_az7-don_tc_emps_dsn7 ;
+         DO don_coefeqtp      = don_tc_emps_smna7 / don_tc_emps_smna1 ;
+      
+      // Emploi marchand : 
+         DO don_tc_emps_sm1 = don_tc_emps_d1 - don_tc_emps_dsn1 ;
+         DO don_tc_emps_sm7 = don_tc_emps_d7 - don_tc_emps_dsn7 ;
+         DO don_coefeqtp_sm = don_tc_emps_sm7 / don_tc_emps_sm1 ;
+         
+      // Rémunération, Masse salariale, Cotisations et Impôts et Subventions sur la production SMNA
+         DO don_tc_d11_smna3  = don_tc_d11_d3-don_tc_d11_az3-don_tc_d11_dsn3 ;
+         DO don_tc_d12_smna3  = don_tc_d12_d3-don_tc_d12_az3-don_tc_d12_dsn3 ; // Cot. soc. employeurs dans SMNA
+         DO don_tc_d1_smna3   = don_tc_d1_d3 -don_tc_d1_az3 -don_tc_d1_dsn3  ; // Rémunération superbrute dans SMNA
+         DO don_tc_d29_smna3  = don_tc_d29_d3-don_tc_d29_az3-don_tc_d29_dsn3 ;
+         DO don_tc_d39_smna3  = don_tc_d39_d3-don_tc_d39_az3-don_tc_d39_dsn3 ;
+         DO don_tc_d239_smna3 = don_tc_d29_smna3 + don_tc_d39_smna3 ;
+
+      // CW, SMPT SMNA et SMEQTP SMNA en euros 
+         DO don_cw            = 1e3*(don_tc_d1_smna3  / don_tc_emps_smna7) ;
+         DO don_cwr           = don_cw / don_td_b1_smna9_ch             ;
+         DO don_smpt          = 1e3*(don_tc_d11_smna3 / don_tc_emps_smna1) ;
+         DO don_smpt7         = 1e3*(don_tc_d11_smna3 / don_tc_emps_smna7) ;
+         DO don_smpt_az       = 1e3*(don_tc_d11_az3   / don_tc_emps_az1  ) ;
+         DO don_smpt_dsn      = 1e3*(don_tc_d11_dsn3  / don_tc_emps_dsn1 ) ;
+         DO don_smpt_s13      = 1e3*(don_tc_d11_s13e3  / don_tc_emps_s131 ) ;
+         
+	     DO don_smpt_dai = tc_d11_dai3 / tc_emps_dai1 * 1000 ;
+	     DO don_smpt_dse = tc_d11_dse3 / tc_emps_dse1 * 1000 ;
+	     DO don_smpt_nrj = tc_d11_nrj3 / tc_emps_nrj1 * 1000 ;
+	     DO don_smpt_dsa = tc_d11_dsa3 / tc_emps_dsa1 * 1000 ;
+
+		do don_tc_emps_dsn_hapu1 = tc_emps_dsn1 - tc_emps_s131 ; 
+		do don_tc_d11_dsn_hapu3  = tc_d11_dsn3  - tc_d11_s13e3  ;
+		do don_smpt_dsn_hapu 	 = 1000*tc_d11_dsn_hapu3 / tc_emps_dsn_hapu1 ; 
+		 
+      // Taux d'épargne
+         DO don_txep = 100*(1-don_td_p3m_d3 / don_td_b6_s143 )  ; // Taux d'épargne trimestriel des ménages
+
+      // Calcul des coûts unitaires salariaux
+         DO don_cus_d9_ch    = (don_tc_d1_d3    + don_tc_d239_d3)   /don_td_p1e_d7_ch;
+         DO don_cus_smna9_ch = (don_tc_d1_smna3 + don_tc_d239_smna3)/don_td_p1e_smna7_ch;
+         DO don_cus_dai9_ch  = (don_tc_d1_dai3  + don_tc_d239_dai3) /don_td_p1e_dai7_ch ;
+         DO don_cus_dse9_ch  = (don_tc_d1_dse3  + don_tc_d239_dse3) /don_td_p1e_dse7_ch ;
+         DO don_cus_dsa9_ch  = (don_tc_d1_dsa3  + don_tc_d239_dsa3) /don_td_p1e_dsa7_ch ;
+         DO don_cus_nrj9_ch  = (don_tc_d1_nrj3  + don_tc_d239_nrj3) /don_td_p1e_nrj7_ch ;
+         DO don_cus_dsn9_ch  = (don_tc_d1_dsn3  + don_tc_d239_dsn3) /don_td_p1e_dsn7_ch ;
+         
+      // Calcul des coûts unitaires des consommations intermédiaires
+         DO don_cui_d9_ch    = don_td_p2e_d3    / don_td_p1e_d7_ch;
+         DO don_cui_smna9_ch = don_td_p2e_smna3 / don_td_p1e_smna7_ch;
+         DO don_cui_dai9_ch  = don_td_p2e_dai3  / don_td_p1e_dai7_ch ;
+         DO don_cui_dse9_ch  = don_td_p2e_dse3  / don_td_p1e_dse7_ch ;
+         DO don_cui_dsa9_ch  = don_td_p2e_dsa3  / don_td_p1e_dsa7_ch ;
+         DO don_cui_nrj9_ch  = don_td_p2e_nrj3  / don_td_p1e_nrj7_ch ;
+         DO don_cui_dsn9_ch  = don_td_p2e_dsn3  / don_td_p1e_dsn7_ch ;
+
+      // Calcul du coût du travail
+         DO don_cw_d    = (1e6*don_tc_d1_d3)   /(1e3*don_tc_emps_d7);
+         DO don_cw_smna = (1e6*don_tc_d1_smna3)/(1e3*don_tc_emps_smna7);
+         DO don_cw_dai  = (1e6*don_tc_d1_dai3) /(1e3*don_tc_emps_dai7) ;
+         DO don_cw_dse  = (1e6*don_tc_d1_dse3) /(1e3*don_tc_emps_dse7) ;
+         DO don_cw_dsa  = (1e6*don_tc_d1_dsa3) /(1e3*don_tc_emps_dsa7) ;
+         DO don_cw_nrj  = (1e6*don_tc_d1_nrj3) /(1e3*don_tc_emps_nrj7) ;
+         DO don_cw_dsn  = (1e6*don_tc_d1_dsn3) /(1e3*don_tc_emps_dsn7) ;
+
+// ***************************************************************
+// Compte des ménages S14=S14a+S14b (resp. EI et ménages purs) ***
+// ***************************************************************	
+   	 DO don_td_b1_s143 = don_td_b1_s14a3 + don_td_b1_s14b3 ;
+   	 DO don_tc_b1_s143 = don_tc_b1_s14a3 + don_tc_b1_s14b3 ;
+   	 
+   	 DO don_tc_d12_s14ae3 = don_tc_d121_s14ae3 ,
+   		don_tc_d12_s14be3 = don_tc_d121_s14be3 ,
+   		don_tc_d12_s14e3  = don_tc_d12_s14ae3 + don_tc_d12_s14be3 ;
+    
+	DO don_tc_d11_s14e3 = don_tc_d11_s14ae3 + don_tc_d11_s14be3 ,
+   	   don_tc_d29_s14e3 = don_tc_d29_s14ae3 + don_tc_d29_s14be3 ,
+   	   don_tc_d39_s14e3 = don_tc_d39_s14ae3 + don_tc_d39_s14be3 ;
+   	    	 
+   // compte d'exploitation  
+   //   tc_b2_s14b3 = ebe des ménages purs
+   //   tc_b2_s14a3 = ebe des ei
+      DO don_td_b2_s143 =don_td_b2_s14b3+don_td_b2_s14a3 ; 
+      DO don_tc_b2_s143 =don_tc_b2_s14b3+don_tc_b2_s14a3 ; 
+
+   // compte d'affectation des revenus primaires et secondaires
+      DO don_tc_d12_s14r3 = don_tc_d121_s14r3 +don_tc_d122_s14r3 ;
+
+   // Intérêts et autres revenus de la propriété
+      DO don_tc_d41_s14s3 = don_tc_d41_s14r3-don_tc_d41_s14e3 ,              
+         don_tc_d4z_s14s3 = don_tc_d44_s14r3+don_tc_d45_s14r3-don_tc_d45_s14e3 ; 
+	  
+	  do don_tc_d61_s14e3 = don_tc_d611z_s14e3 + don_tc_d612z_s14e3 + don_tc_d613z_s14e3 ;
+	  
+	  
+	  DO don_tc_d62_s14r3 = don_tc_d621_s14r3 + don_tc_d622_s14r3 + don_tc_d623_s14r3 ; // prestations
+
+      DO don_tc_d7_s14s3  = don_tc_d72_s14r3 + don_tc_d75_s14r3 - don_tc_d71_s14e3 - don_tc_d75_s14e3 ; // transferts
+
+      DO don_tc_d5_s14e3  = don_tc_d51_s14e3 + don_tc_d59_s14e3 ; // impôts
+      
+      // vérification RDB
+      DO PRT.((don_td_b6_s143-(don_td_b2_s143+don_tc_d11_s14r3 + don_tc_d12_s14r3 
+            +(don_tc_d41_s14s3+don_tc_d42_s14r3+don_tc_d4z_s14s3)
+            + don_tc_d62_s14r3 + don_tc_d7_s14s3 - don_tc_d5_s14e3 - don_tc_d611z_s14e3- don_tc_d612z_s14e3- don_tc_d613z_s14e3)));
+      DO PRT.(MAXS(ABSV(don_td_b6_s143-(don_td_b2_s143+don_tc_d11_s14r3 + don_tc_d12_s14r3 
+            +(don_tc_d41_s14s3+don_tc_d42_s14r3+don_tc_d4z_s14s3)
+            + don_tc_d62_s14r3 + don_tc_d7_s14s3 - don_tc_d5_s14e3 - don_tc_d611z_s14e3- don_tc_d612z_s14e3- don_tc_d613z_s14e3))));
+
+  DO don_tc_d9_s14s3 = don_tc_d92_s14r3 + don_tc_d99_s14r3 -(don_tc_d91_s14e3+ don_tc_d99_s14e3)   ;   ;
+ 
+// *********************** 
+// Compte des SNF S11  ***
+// ***********************	
+ 
+ 	// compte d'exploitation 
+		// ressources : VA brute (B1)  
+		// emplois : Rémunération des salariés (D1) + Autres impôts sur la production et subv. d'exploitation (D2 et D3) 
+		// solde : Excédent brut d'exploitation (B2)
+		// données : td_b1_s113 et tc_b1_s113 ; d1, d11, d121, d122 ; d29, d291, d292 ; d39 ; tc_b2_s113, td_b2_s113
+		DO don_tc_d12_s11e3 =  don_tc_d121_s11e3 + don_tc_d122_s11e3 ;
+			
+ 	// Compte d'affectation des revenus primaires
+		// ressources : EBE + revenus de la propriété (intérêts, revenus distribués par des sociétés, autres revenus de propriétés)
+		// emplois : intérêts aux créditeurs, revenus distribués etc. (D4*e)
+		// solde : Solde des revenus primaires bruts 
+		// données : d41(E et R), d42(E et R), d43(E et R), d44 R, d45 (E et R)
+		DO don_tc_d41_s11s3 = don_tc_d41_s11r3 - don_tc_d41_s11e3 ; // intérêts 
+		DO don_tc_d42_s11s3 = don_tc_d42_s11r3 - don_tc_d42_s11e3 ; // revenus distribués des sociétés (dividendes etc.)
+		DO don_tc_d4z_s11s3 = don_tc_d43_s11r3 - don_tc_d43_s11e3 + don_tc_d44_s11r3 + don_tc_d45_s11r3 - don_tc_d45_s11e3 ; // le reste
+		
+	// Compte de distribution secondaire du revenu
+		// ressources : SRPB + cotisations sociales + autres transferts courants (assurance, amendes, dons...)
+		// emplois : Impôts sur le revenu (IS) (D5), prestations sociales (D6), autres transferts courants (D7)
+		// solde : Revenu disponible Brut RDB (B6)
+		// données : D51 E, D612z R, D613z R, D622z E, D71 E, D72 R, D75 (E et R), td_b6_s113 et tc_b6_s113 
+		// prestations : D612z R, D613z R, D622z E 
+			 // d612z R : cotisations sociales imputées
+			 // d613z R : cotisations sociales effectives à la charge des ménages
+			 // d622z E : prestations sociales en espèces
+		DO don_tc_d61_s11r3 = don_tc_d612z_s11r3 + don_tc_d613z_s11r3 ;
+		
+
+		DO don_tc_d62_s11e3 = don_tc_d622_s11e3 ;
+		
+		DO don_tc_d75_s11s3 = don_tc_d75_s11r3 - don_tc_d75_s11e3 ; // transferts courants divers
+		DO don_tc_d7_s11s3 = - don_tc_d71_s11e3 + don_tc_d72_s11r3 + don_tc_d75_s11r3 - don_tc_d75_s11e3 ; 
+		
+		do don_tc_d9_s11s3 = don_tc_d92_s11r3  + don_tc_d99_s11r3-(don_tc_d91_s11e3 + don_tc_d99_s11e3);
+		
+	
+
+	//vérifications
+		DO PRT.((ABSV((don_td_b2_s113 - (don_td_b1_s113 - (don_tc_d11_s11e3 + don_tc_d12_s11e3 + don_tc_d29_s11e3 + don_tc_d39_s11e3)))))) ;
+
+
+		DO PRT.(MAXS(ABSV(don_tc_d1_s11e3 - don_tc_d11_s11e3 - don_tc_d12_s11e3)));
+
+				 
+		DO PRT.(MAXS(ABSV((don_td_b6_s113 - (don_td_b2_s113 + 
+		(don_tc_d41_s11s3 + don_tc_d42_s11s3 + don_tc_d4z_s11s3 + don_tc_d61_s11r3 +  don_tc_d72_s11r3 + don_tc_d75_s11s3) 
+		- (don_tc_d51_s11e3 + don_tc_d62_s11e3 + don_tc_d71_s11e3 ))))));
+		
+
+//autres secteurs institutionnels// 
+
+// *********************** 
+// Compte des APU s13  ***
+// ***********************	
+// composantes somme des coûts APU pour construire p1 et composantes p3g
+	// p1 = p2e_s13e3 + d1 + d29 + d39 + b2
+
+	// p3g = p2e + d1 + d29 -(p131 + d39) + b2 + d632
+	// on utilise cette égalité comptable pour calculer en solde p131 
+DO don_td_p131_s13r3 = - td_p3g_d3 + (td_p2e_s13e3 + tc_d1_s13e3 + tc_d29_s13e3 -tc_d39_s13e3 +td_b2_s133 + tc_d632_s13e3); 
+DO don_td_p3g_hms3 = don_td_p3g_d3 - tc_d1_s13e3 ; 
+DO don_td_p3g_dsn_hms3 = don_td_p3g_dsn3 - tc_d1_s13e3 ; 
+DO don_td_p3g_dsn_hms7_ch = td_p3g_dsn_hms3/(td_p3g_dsn9_ch*100) ;
+
+DO don_tc_d12_s13e3 = don_tc_d121_s13e3 + don_tc_d122_s13e3 ; 
+DO don_tc_d29_s13r3 = tc_d29_s11e3 + tc_d29_s12e3 + tc_d29_s13e3 + tc_d29_s14e3 + tc_d29_s15e3 ; 
+DO don_tc_d41_s13s3 = don_tc_d41_s13r3 - don_tc_d41_s13e3 ;
+DO don_tc_d42_s13s3 = don_tc_d42_s13r3 ;
+DO don_tc_d4z_s13s3 = (don_tc_d44_s13r3+don_tc_d45_s13r3)-(don_tc_d45_s13e3) ;
+DO don_tc_d5_s13e3  = don_tc_d51_s13e3 ; 
+DO don_tc_d5_s13r3  = don_tc_d51_s13r3 + don_tc_d59_s13r3 ; 
+do don_tc_d61_s13r3 = don_tc_d611z_s13r3 + don_tc_d612z_s13r3 + don_tc_d613z_s13r3 ; 
+
+
+DO don_tc_d62_s13e3 = don_tc_d621_s13e3 + don_tc_d622_s13e3 + don_tc_d623_s13e3 ; 
+DO don_tc_d7_s13s3  =  don_tc_d72_s13r3  + don_tc_d73_s13r3 + don_tc_d74_s13r3 + don_tc_d75_s13r3 - (don_tc_d71_s13e3   + don_tc_d73_s13e3 + don_tc_d74_s13e3 + don_tc_d75_s13e3 + don_tc_d76_s13e3) ;
+do don_tc_d9_s13s3 = don_tc_d91_s13r3 + don_tc_d92_s13r3  + don_tc_d99_s13r3 -(don_tc_d92_s13e3  + don_tc_d99_s13e3);
+
+do don_defprim  = (-don_td_b9nf_s133+don_tc_d41_s13s3)/don_td_pib3*100 ;
+do don_soldprim = (don_td_b9nf_s133-don_tc_d41_s13s3)/don_td_pib3*100  ;
+
+// *********************** 
+// Compte des SF s12  ***
+// ***********************	
+DO 
+// Compte d'exploitation       
+don_tc_d12_s12e3 = don_tc_d121_s12e3                   + don_tc_d122_s12e3 ,  
+
+// Compte d'affectation des revenus 
+
+don_tc_d41_s12s3 = don_tc_d41_s12r3 - don_tc_d41_s12e3 ,
+don_tc_d42_s12s3 = don_tc_d42_s12r3 - don_tc_d42_s12e3 ,
+don_tc_d4z_s12s3 = (don_tc_d43_s12r3 + don_tc_d44_s12r3)-(don_tc_d43_s12e3 + don_tc_d44_s12e3) ,
+
+don_tc_d5_s12e3 = don_tc_d51_s12e3 + don_tc_d59_s12e3 , 
+
+don_tc_d61_s12r3 = don_tc_d611z_s12r3 + don_tc_d612z_s12r3 + don_tc_d613z_s12r3 , 
+
+    
+don_tc_d62_s12e3 =                   don_tc_d622_s12e3                  , 
+
+
+don_tc_d7_s12s3 = don_tc_d71_s12r3 + don_tc_d72_s12r3 + don_tc_d75_s12r3  -(don_tc_d71_s12e3 + don_tc_d72_s12e3+ don_tc_d75_s12e3),
+
+// Compte de capital         
+don_tc_d9_s12r3 =                don_tc_d92_s12r3  + don_tc_d99_s12r3 , 
+don_tc_d9_s12e3 =  don_tc_d91_s12e3                + don_tc_d99_s12e3 , 
+don_tc_d9_s12s3 =  don_tc_d92_s12r3  + don_tc_d99_s12r3 -(don_tc_d91_s12e3 + don_tc_d99_s12e3);
+
+// vérifications
+DO PRT.(MAXS((ABSV((td_b2_s123 -(td_b1_s123 - don_tc_d11_s12e3 - don_tc_d12_s12e3 - don_tc_d29_s12e3 - don_tc_d39_s12e3)))))) ;
+
+DO PRT.(MAXS(ABSV(td_b6_s123  -(td_b2_s123 + don_tc_d61_s12r3 - don_tc_d5_s12e3 - don_tc_d62_s12e3+ don_tc_d7_s12s3 +don_tc_d41_s12s3+don_tc_d42_s12s3+don_tc_d4z_s12s3)))) ; 
+DO PRT.(MAXS((ABSV(td_b9nf_s133 -( td_b8_s133 + tc_d9_s13s3 - td_p51g_d3- td_p52_s13e3 - tc_np1_s13e3))))) ; 
+DO PRT.(MAXS((ABSV(td_b8_s133 -( td_b6_s133 - td_p3g_d3)))));
+
+
+// *********************** 
+// Compte des ISBLSM s15  
+// ***********************	
+DO don_tc_d12_s15e3 = don_tc_d121_s15e3 ;
+DO don_tc_d41_s15s3 = don_tc_d41_s15r3 - don_tc_d41_s15e3 ;
+
+DO don_tc_d4z_s15s3 = don_tc_d44_s15r3; 
+
+DO don_tc_d62_s15e3 = don_tc_d623_s15e3				  ; 
+DO don_tc_d7_s15s3 =  don_tc_d72_s15r3 + don_tc_d75_s15r3-(don_tc_d71_s15e3 + don_tc_d75_s15e3 );
+do don_tc_d9_s15s3 =  don_tc_d92_s15r3  + don_tc_d99_s15r3-don_tc_d99_s15e3 ;
+
+
+// *********************** 
+// Reste du monde s2  
+// ***********************	
+DO don_tc_d12_s2s3 = don_tc_d121_s2r3 - don_tc_d121_s2e3 ; 
+DO don_tc_d12_s2e3 = don_tc_d121_s2e3 ;
+DO don_tc_d12_s2r3 = don_tc_d121_s2r3 ;
+DO don_tc_d41_s2s3  = don_tc_d41_s2r3  - don_tc_d41_s2e3 ;
+DO don_tc_d42_s2s3  = don_tc_d42_s2r3  - don_tc_d42_s2e3  ;
+DO don_tc_d4z_s2s3 =  (don_tc_d43_s2r3 + don_tc_d44_s2r3)-(don_tc_d43_s2e3 + don_tc_d44_s2e3);
+DO don_tc_d61_s2e3 = tc_d611z_s2e3 + tc_d613z_s2e3 ; 
+DO don_tc_d61_s2r3 = tc_d611z_s2r3 + tc_d613z_s2r3 ; 
+DO don_tc_d61_s2s3 = don_tc_d61_s2r3 - don_tc_d61_s2e3;
+
+DO don_tc_d62_s2e3 = don_tc_d621_s2e3 ; 
+
+DO don_tc_d62_s2r3 = don_tc_d621_s2r3 + don_tc_d622_s2r3 + don_tc_d623_s2r3  ; 
+
+DO don_tc_d62_s2s3 = don_tc_d62_s2r3 - don_tc_d62_s2e3 ;
+DO don_tc_d7_s2s3 = tc_d71_s2r3 + tc_d72_s2r3 + tc_d74_s2r3 + tc_d75_s2r3 + tc_d76_s2r3-(tc_d71_s2e3 + tc_d72_s2e3 + tc_d74_s2e3 + tc_d75_s2e3) ;
+do don_tc_d9_s2s3 = tc_d92_s2r3  + tc_d99_s2r3 - (tc_d92_s2e3  + tc_d99_s2e3 );
+
+
+			
+DELACCESS all; DELSAVE; DRANGE;
+
+
+// *****************************************************
+// ***** fin de mes1c                              *****
+// *****************************************************    

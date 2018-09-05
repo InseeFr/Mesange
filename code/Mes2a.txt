@@ -1,0 +1,495 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// *******************************************************************************
+// ***** 2.- Enrichissement de la base de données avec des séries extérieures ****
+// *******************************************************************************
+
+// Input : -fichier des comptes trimestriels             don1.frm
+// Ouput : -fichier enrichi des données extérieures      don2.frm
+
+// Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE all; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+// Importation des données des comptes trimestriels
+      ACCESS in  id .\BDD\don1d.frm type formdata mode r; SEARCH in; 
+      ACCESS out id .\BDD\don2.frm  type formdata mode c; SEARCH out;
+      DO DFDELETE("out",">");
+      DO DFCOPY'F ("in","out");
+      DELSEARCH in; DELACCESS in;      
+   
+   
+//**************************************************************************************
+// ***** 1.- Importation de données externes - fichiers Excel                                        *****
+// *******************************************************************************************************
+&tbl2ts file "./BDD/ipc.wk1";   
+DO out_ipc=ipc,
+out_inflation=100*ipc/ipc(-4)-100;
+
+&tbl2ts file "./BDD/CoupPouce.wk1";   
+DO out_pouce   = pouceb100  ; 
+DO out_smic   	= smic2      ; 
+DO out_smiccvs = smiccvs ;
+// revalorisation smic : 
+DO out_smic_cp1    = LOG(out_smic/out_ipc) - (0.25* (LOG(td_b1_sm7_ch/tc_emps_sm7) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-1) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-2) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-3))); 
+DO out_smic_cvs = LOG(out_smiccvs) - LOG(out_IPC) - (0.25* (LOG(td_b1_sm7_ch/tc_emps_sm7) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-1) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-2) + LOG(td_b1_sm7_ch/tc_emps_sm7)(-3)));
+DO out_smic_cvs_cp=EXP(out_smic_cvs);
+
+DO out_productivite = LOG(td_b1_sm7_ch/tc_emps_sm7) ; 					
+
+// Taux - euribor à 3 mois
+&tbl2ts file "./BDD/eur3m.wk1";   
+DO out_eur3m=eur3m;
+
+// Taux - OAT à 10 ans
+&tbl2ts file "./BDD/oat10a.wk1";   
+DO out_oat10a=oat10a;
+DO out_spreadCTLT = OAT10A - EUR3M;                                                                                                                           
+
+// Taux de change EUR-USD
+&tbl2ts file "./BDD/txchange.wk1";   
+DO out_usa_tc=usa_tc;
+
+// Baril Brent spot en USD
+&tbl2ts file "./BDD/baril.wk1";   
+DO out_baril_us=baril;
+DO out_baril=baril_us*usa_tc;
+
+// Prix immobiliers dans l'ancien
+&tbl2ts file "./BDD/pximmo.wk1";   
+DO out_pximmo=pximmo;
+DO out_pximmo_rel = pximmo / td_p1_dsa9_ch ;
+
+// Temperature Écart T1/T4 à la température moyenne
+&tbl2ts file "./BDD/meteo.wk1";   
+DO out_temperature=temperature ;
+
+// Taux de déclassement
+&tbl2ts file "./BDD/tauxdec.wk1";   
+DO out_tdec=tdec;
+DO out_tdec_dai=tdec_dai;
+DO out_tdec_dse=tdec_dse;
+DO out_tdec_dsa=tdec_dsa;
+
+// Prime de risque
+&tbl2ts file "./BDD/primerisque.wk1";   
+DO out_prime=prime;
+
+// Capital net et taux de déclassement en valeur
+&tbl2ts file "./BDD/capitalnet.wk1";   
+DO out_knet=knet;
+DO out_tdec3=4*(td_p51s_d3-1000*DEL(knet))/(1000*knet(-1));
+
+
+&tbl2ts file "./BDD/knetvol.wk1";   
+DO out_knetvol=knetvol;   
+
+// Taux d'utilisation des capacités
+&tbl2ts file "./BDD/tuc.wk1";   
+DO out_tuc=tuc;   
+
+// Taux de chômage BIT métropolitain et population active
+&tbl2ts file "./BDD/chomage.wk1";
+&tbl2ts file "./BDD/popact.wk1"; 
+DO out_popact = popact;  
+DO out_tcho   = txcho,
+out_tc_cho_d1 = (tcho/100) * popact;
+
+// Indemnités chômage
+&tbl2ts file "./bdd/d62cho.wk1";   
+DO out_tc_d62cho_s13e3 = tc_d62cho_s13e3 ,
+out_tc_d62hcho_s13e3 = out_tc_d62_s13e3 - out_tc_d62cho_s13e3 ;
+
+// Données commerce extérieures 
+&tbl2ts file "./bdd/datacomext.wk1";   
+DO  out_petm = petm ,
+out_petx = petx ,
+out_demmon = demmon ,
+out_pdm_em = pdm_em ,
+out_pdm_vol = pdm_vol ,
+out_num_comp_cout = num_comp_cout ,
+out_ouv = ouv ;
+
+&tbl2ts file "./BDD/petc.wk1";   
+DO out_petmc = petmc ;
+DO out_petxc = petxc ;
+
+do out_compet_prix_dai = out_petx/td_p6_dai9_ch/100 ;
+do out_compet_prix_dse = out_petx/td_p6_dse9_ch/100 ;
+do out_csu_d = tc_d1_d3 / td_pib7_ch * 100 ;
+DO out_compet_cout = num_comp_cout / csu_d / 100 ;
+DO out_compet_dai = petx/td_p6_dai9_ch/100;
+DO out_compet_dse = petx/td_p6_dse9_ch/100;
+DO out_compit_dse = td_p7_dse9_ch/td_p1_dse9_ch;
+
+
+DO out_tei_pconso_pva = td_p3m_d9_ch / td_b1_sm9_ch ; 
+DO out_tei_pinv_pva   = td_p51s_d9_ch / td_b1_sm9_ch ;
+DO out_tei_pva_petm	  = td_b1_sm9_ch / petm ;
+
+// Répartition Q/NQ via les DADS, et création de variables
+&tbl2ts file "./BDD/DADSQNQ.wk1";
+// Dimension Emploi :
+DO out_p_nq_emp_dai  = part_emp_DAI_NQ,  // part des non-qualifiés dans l'emploi du DAI 
+out_p_nq_emp_dsa  = part_emp_DSA_NQ,  // part des non-qualifiés dans l'emploi du DSA 
+out_p_nq_emp_dse  = part_emp_DSE_NQ,  // part des non-qualifiés dans l'emploi du DSE 
+out_p_nq_emp_nrj  = part_emp_NRJ_NQ;  // part des non-qualifiés dans l'emploi du NRJ 
+
+DO out_tc_emps_nq_dai7 =  out_p_nq_emp_dai*tc_emps_dai7,
+out_tc_emps_nq_dsa7 =  out_p_nq_emp_dsa*tc_emps_dsa7,
+out_tc_emps_nq_dse7 =  out_p_nq_emp_dse*tc_emps_dse7,
+out_tc_emps_nq_nrj7 =  out_p_nq_emp_nrj*tc_emps_nrj7,
+out_tc_emps_q_dai7  = (1-out_p_nq_emp_dai)*tc_emps_dai7,
+out_tc_emps_q_dsa7  = (1-out_p_nq_emp_dsa)*tc_emps_dsa7,
+out_tc_emps_q_dse7  = (1-out_p_nq_emp_dse)*tc_emps_dse7,
+out_tc_emps_q_nrj7  = (1-out_p_nq_emp_nrj)*tc_emps_nrj7;
+
+DO out_tc_emps_nq7     =  out_tc_emps_nq_dai7+out_tc_emps_nq_dsa7+out_tc_emps_nq_dse7+out_tc_emps_nq_nrj7,
+out_tc_emps_q7     =  out_tc_emps_q_dai7+out_tc_emps_q_dsa7+out_tc_emps_q_dse7+out_tc_emps_q_nrj7;
+
+// Dimension Masse salariale brute :
+DO out_p_nq_D11_dai  = part_D11_DAI_NQ,  // part des non-qualifiés dans le D11 du DAI 
+out_p_nq_D11_dsa  = part_D11_DSA_NQ,  // part des non-qualifiés dans le D11 du DSA 
+out_p_nq_D11_dse  = part_D11_DSE_NQ,  // part des non-qualifiés dans le D11 du DSE 
+out_p_nq_D11_nrj  = part_D11_NRJ_NQ;  // part des non-qualifiés dans le D11 du NRJ 
+
+DO out_tc_D11_nq_dai3 =  out_p_nq_D11_dai*tc_D11_dai3,
+out_tc_D11_nq_dsa3 =  out_p_nq_D11_dsa*tc_D11_dsa3,
+out_tc_D11_nq_dse3 =  out_p_nq_D11_dse*tc_D11_dse3,
+out_tc_D11_nq_nrj3 =  out_p_nq_D11_nrj*tc_D11_nrj3,
+out_tc_D11_q_dai3  = (1-out_p_nq_D11_dai)*tc_D11_dai3,
+out_tc_D11_q_dsa3  = (1-out_p_nq_D11_dsa)*tc_D11_dsa3,
+out_tc_D11_q_dse3  = (1-out_p_nq_D11_dse)*tc_D11_dse3,
+out_tc_D11_q_nrj3  = (1-out_p_nq_D11_nrj)*tc_D11_nrj3;
+
+DO out_tc_D11_nq3  =  out_tc_D11_nq_dai3+out_tc_D11_nq_dsa3+out_tc_D11_nq_dse3+out_tc_D11_nq_nrj3,
+out_tc_D11_q3     =  out_tc_D11_q_dai3+out_tc_D11_q_dsa3+out_tc_D11_q_dse3+out_tc_D11_q_nrj3;
+
+
+// Dimension Coût du travail (=D1=D11+D12) :
+DO out_p_nq_D1_dai  = part_D1_DAI_NQ,  // part des non-qualifiés dans le D1 du DAI 
+out_p_nq_D1_dsa  = part_D1_DSA_NQ,  // part des non-qualifiés dans le D1 du DSA 
+out_p_nq_D1_dse  = part_D1_DSE_NQ,  // part des non-qualifiés dans le D1 du DSE 
+out_p_nq_D1_nrj  = part_D1_NRJ_NQ;  // part des non-qualifiés dans le D1 du NRJ 
+
+DO out_tc_D1_nq_dai3 =  out_p_nq_D1_dai*tc_D1_dai3,
+out_tc_D1_nq_dsa3 =  out_p_nq_D1_dsa*tc_D1_dsa3,
+out_tc_D1_nq_dse3 =  out_p_nq_D1_dse*tc_D1_dse3,
+out_tc_D1_nq_nrj3 =  out_p_nq_D1_nrj*tc_D1_nrj3,
+out_tc_D1_q_dai3  = (1-out_p_nq_D1_dai)*tc_D1_dai3,
+out_tc_D1_q_dsa3  = (1-out_p_nq_D1_dsa)*tc_D1_dsa3,
+out_tc_D1_q_dse3  = (1-out_p_nq_D1_dse)*tc_D1_dse3,
+out_tc_D1_q_nrj3  = (1-out_p_nq_D1_nrj)*tc_D1_nrj3;
+
+DO out_tc_D1_nq3  =  out_tc_D1_nq_dai3+out_tc_D1_nq_dsa3+out_tc_D1_nq_dse3+out_tc_D1_nq_nrj3,
+out_tc_D1_q3     =  out_tc_D1_q_dai3+out_tc_D1_q_dsa3+out_tc_D1_q_dse3+out_tc_D1_q_nrj3;
+
+// Quelques variables supplémentaires pour les équations de salaire :
+
+DO out_TCS_NQ     = TCS_NQ;      // Taux de cotisations salariés des non-qualifiés 
+DO out_TCS_Q      = TCS_Q;       // Taux de cotisations salariés des qualifiés 
+DO out_CSGCRDS    = TCSG;     // Taux de CSG+CRDS (non-qualifiés et qualifiés confondus)
+
+DO out_TCE_NQ           = out_tc_d1_nq3/out_tc_d11_nq3 - 1  ,
+out_TCE_Q            = out_tc_d1_q3/out_tc_d11_q3 -1,
+out_smpt_nq7  = 1000*(out_tc_d11_nq3 / out_tc_emps_nq7) ,
+out_smpt_q7   = 1000*(out_tc_d11_q3  / out_tc_emps_q7) ,
+out_cs_nq     = (1+out_TCE_NQ)/(1-out_TCS_NQ-out_CSGCRDS),
+out_cs_q      = (1+out_TCE_Q) /(1-out_TCS_Q -out_CSGCRDS);
+
+
+// pour intégration des données Q NQ dans Mes3 : 
+do  out_calc_emps_nq_dai7 = tc_emps_nq_dai7 ,
+ 	out_calc_emps_nq_dse7 = tc_emps_nq_dse7 ,
+	out_calc_emps_nq_dsa7 = tc_emps_nq_dsa7 ,
+	out_calc_emps_nq_nrj7 = tc_emps_nq_nrj7  ;
+	
+do  out_calc_emps_q_dai7 = tc_emps_q_dai7 ,
+ 	out_calc_emps_q_dse7 = tc_emps_q_dse7 ,
+	out_calc_emps_q_dsa7 = tc_emps_q_dsa7 ,
+	out_calc_emps_q_nrj7 = tc_emps_q_nrj7  ;
+
+
+do out_part_emps_nq_dai14q4 = values(tc_emps_nq_dai7/tc_emps_nq7,2014q4) ;
+do out_part_emps_nq_dse14q4 = values(tc_emps_nq_dse7/tc_emps_nq7,2014q4) ;
+do out_part_emps_nq_dsa14q4 = values(tc_emps_nq_dsa7/tc_emps_nq7,2014q4) ;
+do out_part_emps_nq_nrj14q4 = values(tc_emps_nq_nrj7/tc_emps_nq7,2014q4) ;
+
+do out_part_emps_q_dai14q4 = values(tc_emps_q_dai7/tc_emps_q7,2014q4) ;
+do out_part_emps_q_dse14q4 = values(tc_emps_q_dse7/tc_emps_q7,2014q4) ;
+do out_part_emps_q_dsa14q4 = values(tc_emps_q_dsa7/tc_emps_q7,2014q4) ;
+do out_part_emps_q_nrj14q4 = values(tc_emps_q_nrj7/tc_emps_q7,2014q4) ;
+
+do out_corr_emps_q = 0*td_pib3 ; 
+do out_corr_emps_nq = 0*td_pib3 ; 
+
+do out_tc_emps_sm7 = tc_emps_nq7 + tc_emps_q7 ; 
+do out_tc_d1_sm3 = tc_D1_nq3 + tc_D1_q3 ;
+do out_tc_d11_sm3 = tc_D11_nq3 + tc_D11_q3 ;
+do out_cw_sm  = 1000*tc_d1_sm3/tc_emps_sm7 ; 
+DO out_cwr_sm = out_cw_sm / out_td_b1_sm9_ch ; 
+
+do out_tc_emps_sm1 = tc_emps_d1 - tc_emps_dsn1 ;
+
+DO out_cw_q = 1000*(tc_D1_q3/tc_emps_q7) ;
+DO out_cw_nq = 1000*(tc_D1_nq3/tc_emps_nq7);
+
+DO out_smpt_sm7 = 1e3*(out_tc_d11_sm3 / out_tc_emps_sm7) ;
+DO out_smpt_sm     = 1e3*(out_tc_d11_sm3 / out_tc_emps_sm1) ;
+
+DO out_txd291 = (tc_d291_d3-tc_d291_oq3)/tc_d11_sm3;  
+
+
+&tbl2ts file "./BDD/cotsocsal.wk1";  
+DO out_tc_d6112_s13r3 = tc_d6112_s13r_3  ;
+DO out_tc_d6113_s13r3 = tc_d6113_s13r_3  ;
+DO out_tc_d6112_s14e3 = tc_d6112_s14e_3  ;
+DO out_tc_d6113_s14e3 = tc_d6113_s14e_3  ;
+ 
+&tbl2ts file "./BDD/D51.wk1"; 
+DO out_tc_d51ir_s14e3     = tc_d51_s14e_2_ir_etal ;
+DO out_tc_d51csg_trav_s14e3  = tc_d51_s14e_2_csg_actremb ;
+DO out_tc_d51csg_cap_s14e3  = tc_d51_s14e_2_csg_cap_somme ;
+DO out_tc_d51crds_trav_s14e3 = tc_d51_s14e_2_rds_activite ;
+DO out_tc_d51crds_cap_s14e3 = tc_d51_s14e_2_rds_capital ;
+//Construction du solde des prélèvements sociaux PS 
+DO out_tc_d51ps_s14e3 = tc_d51_s14e3-tc_d51_s14e_2_ir_etal-tc_d51_s14e_2_csg_actremb-tc_d51_s14e_2_csg_cap_somme-tc_d51_s14e_2_rds_activite-tc_d51_s14e_2_rds_capital; 	 
+
+//Importation d'une série de mesures nouvelles sur l'IR
+&tbl2ts file "./BDD/MesuresNouvellesT.wk1";
+DO out_MN_CNA = MN_IR_trim;
+
+
+
+
+&tbl2ts file "./BDD/MesuresNouvellesA.wk1";
+DO out_RE_IR = RE_IR ; 
+DO out_RE_IS = RE_IS ; 
+DO PRT.(re_is);
+
+&tbl2ts file "./BDD/tempsA.wk1" ; 
+DO out_temps80A = temps80A ; 
+DO out_temps80Alisse = temps80Alisse ; 
+DO PRT.(temps80Alisse);
+
+     
+// *******************************************************************************************************
+// ***** 2.- Construction de données externes                                                        *****
+// *******************************************************************************************************
+      // Variables de coût du capital 
+      	 DO out_fisc = 100 *((tc_d51_s11e3 +tc_d51_s11e3(-1) +tc_d51_s11e3(-2) +tc_d51_s11e3(-3)+
+                 		tc_d292_s11e3+tc_d292_s11e3(-1)+tc_d292_s11e3(-2)+tc_d292_s11e3(-3)+
+                 		tc_d39_s11e3 +tc_d39_s11e3(-1) +tc_d39_s11e3(-2) +tc_d39_s11e3(-3))/1000)
+                 		/Knet ;
+         DO out_ck    =td_p51s_d9_ch  *(oat10a+tdec  +prime+fisc-(td_p51s_d9_ch  /td_p51s_d9_ch(-4)  -1)*100)/100;
+         DO out_ck_dai=td_p51s_dai9_ch*(oat10a+tdec_dai+prime+fisc-(td_p51s_dai9_ch/td_p51s_dai9_ch(-4)-1)*100)/100;
+         DO out_ck_dse=td_p51s_dse9_ch*(oat10a+tdec_dse+prime+fisc-(td_p51s_dse9_ch/td_p51s_dse9_ch(-4)-1)*100)/100;
+         DO out_ck_dsa=td_p51s_dsa9_ch*(oat10a+tdec_dsa+prime+fisc-(td_p51s_dsa9_ch/td_p51s_dsa9_ch(-4)-1)*100)/100;
+         DO out_ckr  = ck/td_b1_smna9_ch ;
+         DO out_ckr_sm  = ck/td_b1_sm9_ch ;
+         DO out_ckr_d  = ck/td_b1_d9_ch ;
+         
+         // ajouts
+         DO out_fisc1 = 100*((tc_d51_s11e3 +tc_d51_s11e3(-1) +tc_d51_s11e3(-2) +tc_d51_s11e3(-3)+
+            tc_d292_s11e3+tc_d292_s11e3(-1)+tc_d292_s11e3(-2)+tc_d292_s11e3(-3)+
+            tc_d39_s11e3 +tc_d39_s11e3(-1) +tc_d39_s11e3(-2) +tc_d39_s11e3(-3)))
+            /(td_b2_s113+td_b2_s113(-1)+td_b2_s113(-2)+td_b2_s113(-3));
+		 DO out_fisc1 = extrapsd'f(out_fisc1,1,0,2015q1,2100q1); 
+      
+	
+
+		 DO out_ck1 =td_p51s_d9_ch*(oat10a+tdec  +prime+fisc1-(td_p51s_d9_ch  /td_p51s_d9_ch(-4)  -1)*100)/100;
+
+
+
+         // Construction d'un CFS moyen 
+      		// Taux de cotisations employeur et employé
+      	 DO out_tce = tc_d12_smna3   / tc_d11_smna3  ; // taux de cotisations employeurs (uniquement SMNA)
+         do out_tc_d12_sm3 = tc_d12_dai3 + tc_d12_dse3 + tc_d12_dsa3 + tc_d12_nrj3 ;
+         DO out_tce_sm = tc_d12_sm3   / tc_d11_sm3  ; // taux de cotisations employeurs (uniquement SMNA)
+ 	 // redéfinition du tcs, ajout d'un tcsnonsal qui modélise toutes les cotisations sociales des EI
+         DO out_tcs       = tc_d6112_s14e3 / tc_d11_s14r3  ; // taux de cotisations employés (hors cotisations des indépendants)
+         DO out_tcsdsn    = out_tcs  ; // taux de cotisations dans le non marchand (par hypothèse égal au taux moyen de tcs)
+         DO out_tcsrdm    = out_tcs  ; // taux de cotisations du secteur RDM (en solde, par hypothèse égal au taux moyen de tcs)
+         DO out_tcsnonsal = tc_d6113_s14e3 / td_b2_s14b3  ; // taux de cotisations des indépendants (TCE+TCS) : choix d'une assiette sur le B2, soit le revenu mixte
+     
+         	//taux de CSG et CRDS pesant sur le travail 
+         DO out_tcsg_trav  = out_tc_d51csg_trav_s14e3  / (tc_d11_s14r3+tc_d621_s14r3+0.80*tc_d622_s14r3);  
+ 	     DO out_tcrds_trav = out_tc_d51crds_trav_s14e3 / (tc_d11_s14r3+tc_d621_s14r3+0.80*tc_d622_s14r3);
+       		  
+         	//taux d'impôt sur le revenu
+	     DO out_tc_assiette_IR = tc_d11_s14r3(-4)+td_b2_s14a3(-4) - tc_d6112_s13r3(-4) - tc_d6113_s13r3(-4)  // revenus d'activité (D11-cotisations+EBE+RM)imposables 
+   		 	                  	  + tc_d41_s14r3(-4) + tc_d4Z_s14s3(-4); // revenus financiers imposables
+         DO out_tir = out_tc_d51ir_s14e3/ out_tc_assiette_IR ;
+   	     do out_tir_smooth = 0.25*(tir(0) + tir(-1) + tir(-2) + tir(-3)) ;
+   	     
+   	     DO out_base_ir = tc_d11_s14r3-tc_d613z_s14e3+tc_d621_s14r3+tc_d622_s14r3+td_b2_s14a3+tc_d41_s14r3+tc_d42_s14r3+tc_d4z_s14s3 ;
+
+
+         	// Déduction du wedge 
+         DO out_cfs = (1+tce_sm)/(1-tcs-tcsg_trav-tcrds_trav)/(1-tir);
+         DO out_cf = 1/(1-tir);
+     	 DO out_cs = (1+tce_sm)/(1-tcs-tcsg_trav-tcrds_trav);     
+         
+    // Construction de données utiles pour les équations de consommation des ménages :
+      	 DO  out_OAT10AR = OAT10A-(td_p51s_d9_ch/td_p51s_d9_ch(-4)-1)*100,
+		    out_EUR3MR = EUR3M - INFLATION,
+		    out_RDBR = TD_B6_S143/(TD_P3M_D9_CH/100);   
+    
+    	 
+
+      	 
+// **************************************************************************************************************************
+// ***** 3.- Création de tendances et indicatrices                                                                      *****
+// **************************************************************************************************************************
+   // tendances et indicatrices
+   	DO out_temps80 = RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(out_temps80);
+    DO out_trim = temps80-4*TRUNCATE((temps80-1)/4);
+     
+      DO out_temps95T1 = (IF (temps80 <= VALUES(temps80,1995q1)) THEN 0 ELSE temps80-VALUES(temps80,1995q1)) ; 
+			// pour les équations de salaire :   
+      DO out_temps76 = RESHAPE(SEQ(359+NOB(td_pib3)),1976q1), PRT.(out_temps76);
+	  DO out_temps97 = (IF (out_TEMPS76 >= VALUES (out_TEMPS76,1996q4)) THEN out_TEMPS76-VALUES(out_TEMPS76,1996q4) ELSE 0);
+
+      DO out_D86Q2_90Q2 = (IF ((TEMPS80 < VALUES (TEMPS80,1986Q2)) OR (TEMPS80 > VALUES (TEMPS80,1990Q2))) THEN 0 ELSE 1) ;
+      DO out_D95q3 = (IF (TEMPS80 == VALUES (TEMPS80,1995Q3)) THEN 1 ELSE 0) ;
+      DO out_D96q4 = (IF (TEMPS80 == VALUES (TEMPS80,1996Q4)) THEN 1 ELSE 0) ;
+      DO out_d99T4 = (IF (temps80 == VALUES(temps80,1999q4)) THEN 1 ELSE 0) ;   
+      DO out_D11q2 = (IF (TEMPS80 == VALUES (TEMPS80,2011Q2)) THEN 1 ELSE 0) ;
+      DO out_D2003 = (IF (TEMPS80 < VALUES (TEMPS80,2003Q1)) THEN 1 ELSE 0);
+	  DO out_trend90 = (IF (TEMPS80 < VALUES (TEMPS80,1990Q1)) THEN TEMPS80 ELSE VALUES(TEMPS80,1990Q1)),
+	     out_trend91 = (IF (TEMPS80 >= VALUES (TEMPS80,1990q4)) THEN TEMPS80-VALUES(TEMPS80,1990q4) ELSE 0),
+	     out_trend09 = (IF (TEMPS80 >= VALUES (TEMPS80,2008q4)) THEN TEMPS80-VALUES(TEMPS80,2008q4) ELSE 0),
+	     out_trend15 = (IF (TEMPS80 >= VALUES (TEMPS80,2014q4)) THEN TEMPS80-VALUES(TEMPS80,2014q4) ELSE 0);
+	  DOSAVE trend03t1 = (IF (temps80 < VALUES(temps80,2003q1)) THEN 0 ELSE (temps80 - VALUES(temps80,2002q4)) ) ;
+	  DO out_trend03 = (IF (trend03t1 < VALUES(trend03t1,2008q3)) THEN trend03t1 ELSE (VALUES(trend03t1,2008q2) ) ); 
+
+	// tendances et indicatrices pour équations de consommation des ménages
+  	DO  out_bal=(IF ((TEMPS80 == VALUES (TEMPS80,1993Q1)) OR (TEMPS80 == VALUES (TEMPS80,1995Q3))) THEN 1 ELSE 0),
+   		out_jup=(IF (TEMPS80 == VALUES (TEMPS80,1996Q4))  THEN 1 ELSE 0),
+   		out_balpos=(IF (TEMPS80 == VALUES (TEMPS80,1995Q2)) THEN 1 ELSE 0),
+   		out_juppos=(IF (TEMPS80 == VALUES (TEMPS80,1996Q3))  THEN 1 ELSE 0),
+   		out_fil=(IF (TEMPS80 == VALUES (TEMPS80,2011Q2))  THEN 1 ELSE 0);
+
+	DO out_T93Q1 = (IF (TEMPS80 < VALUES (TEMPS80,1993Q1)) THEN (TEMPS80-VALUES(TEMPS80,1993Q1))/(VALUES(TEMPS80,1993Q1)-VALUES(TEMPS80,1988Q1)) ELSE 0) ,
+	   out_T89Q1 = (IF (TEMPS80 < VALUES (TEMPS80,1989Q1)) THEN (TEMPS80-VALUES(TEMPS80,1989Q1))/(VALUES(TEMPS80,1989Q1)-VALUES(TEMPS80,1988Q1)) ELSE 0) ,
+	   out_T99Q1 = (IF (TEMPS80 < VALUES (TEMPS80,1999Q1)) THEN (TEMPS80-VALUES(TEMPS80,1999Q1))/(VALUES(TEMPS80,1999Q1)-VALUES(TEMPS80,1998Q1)) ELSE 0) ,
+	   out_T97Q2 = (IF (TEMPS80 < VALUES (TEMPS80,1997Q2)) THEN (TEMPS80-VALUES(TEMPS80,1997Q2))/(VALUES(TEMPS80,1997Q2)-VALUES(TEMPS80,1996Q2)) ELSE 0) ,
+	   out_CT97Q2 = (IF (TEMPS80 >= VALUES (TEMPS80,1997Q2)) THEN TEMPS80-VALUES(TEMPS80,1997Q1) ELSE 0) ,
+	   out_D97Q2_11Q1 = (IF (TEMPS80 < VALUES (TEMPS80,1997Q2) OR (TEMPS80 > VALUES (TEMPS80,2011Q1))) THEN 0 ELSE 1) ,
+	   out_D98Q1_02Q2 = (IF (TEMPS80 < VALUES (TEMPS80,1998Q1) OR (TEMPS80 > VALUES (TEMPS80,2002Q2))) THEN 0 ELSE 1) ,
+	   out_D12Q2_12Q4 = (IF (TEMPS80 < VALUES (TEMPS80,2012Q2) OR (TEMPS80 > VALUES (TEMPS80,2012Q4))) THEN 0 ELSE 1) ;
+	
+
+	  DO out_D82q3   = (IF (TEMPS80 == VALUES (TEMPS80,1982Q3)) THEN 1 ELSE 0);
+      DO out_sup83q2 = (IF (TEMPS80 >= VALUES (TEMPS80,1983Q2)) THEN 1 ELSE 0);
+      DO out_sup09q1 = (IF (TEMPS80 >= VALUES (TEMPS80,2009q1)) THEN 1 ELSE 0);
+   
+  
+     DO out_tempsw = RESHAPE(SEQ(343+NOB(td_pib3)),1980q1);
+     DO out_tempsw1 = (IF (out_tempsw < VALUES(out_tempsw,1993q1)) THEN 0 ELSE (IF (out_tempsw > VALUES(out_tempsw,2005q1)) THEN 0 ELSE 1));
+      DO out_D_P51mDSA=(IF (TEMPS80 < VALUES (TEMPS80,2003Q4)) THEN 1 
+                           ELSE IF ((TEMPS80 >= VALUES (TEMPS80,2003Q4)) AND (TEMPS80 < VALUES (TEMPS80,2008Q1))) THEN TEMPS80-VALUES(TEMPS80,2003Q2)
+                           ELSE VALUES(TEMPS80-VALUES(TEMPS80,2003Q2),2008Q1)),
+         out_D_P51mDSE=(IF (TEMPS80 < VALUES (TEMPS80,2009Q3)) OR (TEMPS80 > VALUES (TEMPS80,2010Q4))  THEN 0 ELSE 1);
+         
+      DOSAVE tr00_08 = (IF (temps80 > VALUES(temps80,1993q2)) THEN (temps80 - VALUES(temps80,1993q1)) ELSE 0) ; 
+	  DO out_trend_p51s_dse = (IF (temps80 < VALUES(temps80,2002q1)) THEN tr00_08 ELSE VALUES(temps80, 1988q3)) ;   
+	 
+
+
+      DO out_temps76 = RESHAPE(SEQ(359+NOB(out_td_pib3)),1976q1), PRT.(out_temps76);
+      DO out_temps91 = (IF (out_TEMPS76 >= VALUES (out_TEMPS76,1990q4)) THEN out_TEMPS76-VALUES(out_TEMPS76,1990q4) ELSE 0);
+      DO out_temps09 = (IF (out_TEMPS76 >= VALUES (out_TEMPS76,2008q4)) THEN out_TEMPS76-VALUES(out_TEMPS76,2008q4) ELSE 0);
+      DO out_s09q1   = (IF (out_TEMPS76 >= VALUES (out_TEMPS76,2009q1)) THEN 1 ELSE 0);
+
+
+DO out_temps10 = (IF (TEMPS80 < VALUES (TEMPS80,2009Q1)) THEN 0 ELSE temps80-VALUES(TEMPS80,2008Q4));
+DO out_temps8588 = (IF (TEMPS80 < VALUES (TEMPS80,1985Q1)) THEN 0 ELSE 
+                       (IF (TEMPS80 < VALUES (TEMPS80,1989Q1)) THEN temps80-VALUES(TEMPS80,1984Q4) 
+                                 ELSE VALUES(TEMPS80,1989Q1)-VALUES(TEMPS80,1984Q4)));
+
+
+DO out_temps89=(IF (TEMPS80 < VALUES (TEMPS80,1989Q1)) THEN 0 ELSE temps80-VALUES(TEMPS80,1989Q1));
+DO out_sup01  = (IF (temps80 < VALUES(temps80, 2001q4)) THEN 0 ELSE 1);
+
+DO out_d85q190q1 = (IF (TEMPS80 < VALUES (TEMPS80,1985q1) OR (TEMPS80 > VALUES (TEMPS80,1990Q1))) THEN 0 ELSE 1);
+
+
+
+// calcul de l'efficience :
+ ACCESS coefmod type formdata id .\BDD\mesangecoefhorsML.frm mode c ; SEARCH coefmod w ;
+      USEMOD; ADDSYM endogenous tc_emps_sm7, 
+                     exogenous  emps_cale, 'c ; 
+              ADDEQ bottom, 
+    ecm_empl : DEL(LOG(tc_emps_sm7) - emps_cale) = 
+	empcstct'c
+	+ empsar1'c * DEL(LOG(tc_emps_sm7)-emps_cale)(-1)
+	+ empsva0'c * DEL(LOG(td_b1_sm7_ch))(-0)
+	+ empscwrp0'c * DEL(LOG(cw_sm/td_b1_sm9_ch))(-0)
+	+ muemps'c * (LOG(tc_emps_sm7)-emps_cale-LOG(td_b1_sm7_ch))(-1)
+	+ muempsltcwr'c * LOG(cwr_sm)(-1)
+	+ muempschoc2'c * sup09q1(-1)
+	+ muempstendance1'c * temps76(-1)
+	+ muempstendance2'c * temps91(-1);
+      FILEMOD EFF; DOSAVE emps_cale = 0*out_tc_emps_sm7; 
+      USEMOD EFF; &lklimit; BOUNDS 1985q1 TO 2014q4; OLSMOD 1; 
+      SAVECOEF coefmod;
+      
+
+	DO out_eff2= 1/(muemps-muempsltcwr)*(muempstendance1*out_temps76+muempstendance2*out_temps91+muempschoc2*out_sup09q1);
+	
+
+
+  DO out_prodk = tuc * knetvol(-1) * EXP (-(1/0.38) * LOG(td_b1_sm7_ch) +(0.62/0.38) * (LOG(tc_emps_sm7)+Eff2)) ;      
+  DO out_prodk   = extrapsd'f(out_prodk,1,0,2015q1,2100q4);
+
+
+
+   DO out_eff_dsn=LOG(td_b1_dsn7_ch/tc_emps_dsn7);
+   DO out_eff2_proj = (IF (temps80<=VALUES(temps80,2014q4)) THEN 0 ELSE out_eff2-VALUES(eff2,2014q4)) ;
+   DO out_eff_dai = Tc_d1_Dai3(-1)/TD_P1_Dai7_ch(-1) ;
+   DO out_eff_dse = Tc_d1_dse3(-1)/TD_P1_dse7_ch(-1) ;
+   DO out_eff_dsa = Tc_d1_dsa3(-1)/TD_P1_dsa7_ch(-1) ;
+   DO out_eff_nrj = Tc_d1_nrj3(-1)/TD_P1_nrj7_ch(-1) ;
+   
+   DO out_eff_dai_q = Tc_d1_q_Dai3/TD_b1_Dai7_ch ;
+   DO out_eff_dse_q = Tc_d1_q_dse3/TD_b1_dse7_ch ;
+   DO out_eff_dsa_q = Tc_d1_q_dsa3/TD_b1_dsa7_ch ;
+   DO out_eff_nrj_q = Tc_d1_q_nrj3/TD_b1_nrj7_ch ;
+   
+   DO out_eff_dai_nq = Tc_d1_nq_Dai3/TD_b1_Dai7_ch ;
+   DO out_eff_dse_nq = Tc_d1_nq_dse3/TD_b1_dse7_ch ;
+   DO out_eff_dsa_nq = Tc_d1_nq_dsa3/TD_b1_dsa7_ch ;
+   DO out_eff_nrj_nq = Tc_d1_nq_nrj3/TD_b1_nrj7_ch ;
+      
+      
+   // variable 0 sur la projection
+   DO out_debug=(IF ((TEMPS80 > VALUES (TEMPS80,2014Q4))) THEN 0 ELSE 1) ;
+      
+
+   
+   // construction de variables pour la modélisation énergétique :
+   // un indice d'évolution de la structure de production pour les CI en NRJ en volume :
+     DO a17=C.("az" ,"de" ,"c1" ,"c2" ,"c3" ,"c4" ,"c5" ,"fz" ,"gz" ,"hz" ,"iz" ,"jz" ,"kz" ,"lz" ,"mn" ,"oq" ,"ru");
+		&execmd "do out_td_p2@(a17)_nrj1 = out_td_p2a17@(a17)_de1 + out_td_p2a17@(a17)_c21 ;"  ;  
+		// reconstitution des 7_ch brut et cvs cjo 
+		&execmd "do out_ct_p2@(a17)_nrj7_ch   =  out_td_p2@(a17)_nrj1 / out_td_p1e_@(a17)1 ;";
+		&execmd "do out_td_p2@(a17)_nrj7_ch   =  out_ct_p2@(a17)_nrj7_ch * out_td_p1e_@(a17)7_ch ; do out_t_p2@(a17)_nrj7_ch  = out_td_p2@(a17)_nrj7_ch ; " ;
+		// construction de notre indice
+		&execmd "do terme_@(a17) = VALUES(td_p2@(a17)_nrj7_ch,1990q1)/VALUES(td_p1e_@(a17)7_ch,1990q1)*td_p1_@(a17)7_ch/td_p1_dhnrj7_ch ; " ; 
+		DO out_struct_prod = terme_az + terme_c1 + terme_c3 + terme_c4 + terme_c5 + terme_hz + terme_jz + terme_kz + terme_mn + terme_fz + terme_gz + terme_iz + terme_lz + terme_ru + terme_oq ; 
+		// une tendance type pib par tête qui sera prolongée de manière constante 
+        do out_trend_pib_par_tete = out_td_pib7_ch / popact ; 
+   
+
+
+
+
+DELACCESS all; DELSAVE all; DRANGE;
+
+
+
+
+// ***********************************************************************************************************************
+// Fin du programme "Mes2a" 
+// ***********************************************************************************************************************

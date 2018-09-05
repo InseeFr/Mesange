@@ -1,0 +1,19 @@
+﻿// Fonction qui extrapole une série x en la multipliant par mult et en additionnant add
+// En entrée : série x, valeurs mult et add, dates de début et de fin de prolongement 
+// On peut prolonger en niveau et en taux de croissance
+
+addfun main;
+
+procedure main(x,mult,add,debut,fin)
+{
+	z=subrange(x,startdate(x),debut-1);
+ 	t1=debut;
+	t2=fin;
+    for (i=t1;i<=t2;i=i+1)
+       {
+       j=(i-1);
+       prolong=z[j]*mult+add;
+       z=c.(z,prolong); 
+        }
+  return(z); 
+}

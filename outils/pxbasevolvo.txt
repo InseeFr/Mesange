@@ -1,0 +1,65 @@
+﻿// Fonction qui prend en entrée les séries en volume aux prix de l’année précédente et en valeur et retourne la série de prix de l'année précédente
+
+
+
+addfun main;
+
+
+
+procedure main(xvolvo,xval)
+
+{
+
+// Calcul de la série annuelle
+	
+	
+	xvolvo_an = compact(xvolvo,0,1);
+	
+	xval_an = compact(xval,0,1);
+	
+	t0 = startdate(xvolvo_an);
+	
+	t1 = 2010A;
+	
+	t2 = enddate(xvolvo_an);
+	
+	xpxbase_an = 1;
+	
+	i = 1;
+
+   
+	for (j=t1-1;j>=t0-1;j=j-1)
+	
+	{
+	
+		valeur = (xvolvo_an[j+1]/xval_an[j+1])*xpxbase_an[1];
+   
+		xpxbase_an = c.(valeur,xpxbase_an);
+	
+		i = i+1;
+  
+	}
+
+    
+	for (j=t1+1;j<=t2;j=j+1)
+	
+	{
+	
+		valeur = (xval_an[j]/xvolvo_an[j])*xpxbase_an[i]; 
+	
+		xpxbase_an = c.(xpxbase_an,valeur);
+	
+		i = i+1;
+    
+	}
+
+
+// Calcul de la série trimestrielle
+
+	
+	xpxbase = reshape(expand(xpxbase_an,4),convert(convert(date2year(t0),"string")||"q1","date"));
+	
+  
+	return(xpxbase);
+
+}

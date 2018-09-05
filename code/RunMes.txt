@@ -1,0 +1,27 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// Chaque ligne fait tourner un des programmes avec comme instruction d'arrêter Troll en cas d'ERROR :
+
+// Manipulation des données de comptabilité nationale
+INPUT QUITError ./code/Mes1a.inp ;
+INPUT QUITError ./code/Mes1b.inp ;
+INPUT QUITError ./code/Mes1c.inp ;
+INPUT QUITError ./code/Mes1d.inp ;
+
+// Introduction des variables externes (hors comptabilité nationale)
+INPUT QUITError ./code/Mes2a.inp ;
+
+// Estimation des longs termes des équations en deux étapes
+INPUT QUITError ./code/Mes2b.inp ;
+
+// Construction de l'essentiel du modèle
+INPUT QUITError ./code/Mes3a.inp ; 
+
+// Construction de la partie marché du travail
+INPUT QUITError ./code/Mes3b.inp ;
+
+// Compte central
+INPUT QUITError ./code/Mes4.inp ;
+
+// Variantes
+INPUT QUITError ./code/Mes5.inp ;

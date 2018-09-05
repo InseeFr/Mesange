@@ -1,0 +1,192 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+DOSAVE vvar_pbbalcom =100*(((temp_td_p6_d3-temp_td_p7_d3)/temp_td_pib3)-((proj_td_p6_d3-proj_td_p7_d3)/proj_td_pib3));
+DOSAVE vvar_def =100*((-temp_td_b9nf_s133/temp_td_pib3)-(-proj_td_b9nf_s133/proj_td_pib3));
+
+DOSAVE pcvar_wnetreel=100*(((temp_tc_d11_q3+temp_tc_d11_nq3)/(temp_tc_emps_nq7+temp_tc_emps_q7)/temp_td_p3m_d9_ch)/((proj_tc_d11_q3+proj_tc_d11_nq3)/(proj_tc_emps_nq7+proj_tc_emps_q7)/proj_td_p3m_d9_ch)-1);
+
+DOSAVE pcvar_wnetreel=100*(((temp_tc_d11_q3*(1-temp_tcs_q-temp_csgcrds)+temp_tc_d11_nq3*(1-temp_tcs_nq-temp_csgcrds))/(temp_tc_emps_nq7+temp_tc_emps_q7)/temp_td_p3m_d9_ch)/((proj_tc_d11_q3*(1-proj_tcs_q-proj_csgcrds)+proj_tc_d11_nq3*(1-proj_tcs_nq-proj_csgcrds))/(proj_tc_emps_nq7+proj_tc_emps_q7)/proj_td_p3m_d9_ch)-1);
+
+DOSAVE vvara_txepargne =COMPACT( 100*(((temp_td_b6_s143-temp_td_p3m_d3)/temp_td_b6_s143)-((proj_td_b6_s143-proj_td_p3m_d3)/proj_td_b6_s143)),0);
+DOSAVE vvara_pbbalcom =COMPACT( 100*(((temp_td_p6_d3-temp_td_p7_d3)/temp_td_pib3)-((proj_td_p6_d3-proj_td_p7_d3)/proj_td_pib3)),0);
+DOSAVE vvara_def =COMPACT(100*((-temp_td_b9nf_s133/temp_td_pib3)-(-proj_td_b9nf_s133/proj_td_pib3)),0);
+DOSAVE pcvara_coutreelw= COMPACT(100*((temp_cw_sm/temp_td_b1_sm9_ch)/(proj_cw_sm/proj_td_b1_sm9_ch)-1),0); 
+DOSAVE pcvara_wnetreel=COMPACT(100*(((temp_tc_d11_q3*(1-temp_tcs_q-temp_csgcrds)+temp_tc_d11_nq3*(1-temp_tcs_nq-temp_csgcrds))/(temp_tc_emps_nq7+temp_tc_emps_q7)/temp_td_p3m_d9_ch)/((proj_tc_d11_q3*(1-proj_tcs_q-proj_csgcrds)+proj_tc_d11_nq3*(1-proj_tcs_nq-proj_csgcrds))/(proj_tc_emps_nq7+proj_tc_emps_q7)/proj_td_p3m_d9_ch)-1),0);
+
+
+DOSAVE vvara_tmarge = COMPACT(100*(temp_td_b2_s113/temp_td_b1_s113-proj_td_b2_s113/proj_td_b1_s113),0);
+DOSAVE pcvara_wreel= COMPACT(100*(((temp_tc_d11_q3+temp_tc_d11_nq3)/(temp_tc_emps_nq7+temp_tc_emps_q7)/temp_td_p3m_d9_ch)/((proj_tc_d11_q3+proj_tc_d11_nq3)/(proj_tc_emps_nq7+proj_tc_emps_q7)/proj_td_p3m_d9_ch)-1),0);
+
+DOSAVE pcvara_tc_cus_sm7_ch=COMPACT(100*((temp_tc_d1_sm3/temp_td_p1_sm7_ch)/(proj_tc_d1_sm3/proj_td_p1_sm7_ch)-1),0);
+
+
+DOSAVE vvara_fipu_b6   = COMPACT(((temp_td_b6_s133)/temp_td_pib3-(proj_td_b6_s133)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_p3g  = COMPACT(((temp_td_p3g_d3)/temp_td_pib3-(proj_td_p3g_d3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d9   = COMPACT(((temp_tc_d9_s13s3)/temp_td_pib3-(proj_tc_d9_s13s3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_p51g = COMPACT(((temp_td_p51g_d3)/temp_td_pib3-(proj_td_p51g_d3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_p52  = COMPACT(((temp_td_p52_s13e3)/temp_td_pib3-(proj_td_p52_s13e3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_np1  = COMPACT(((temp_tc_np1_s13e3)/temp_td_pib3-(proj_tc_np1_s13e3)/proj_td_pib3)*100,0);
+
+DOSAVE vvara_fipu_b2   = COMPACT(((temp_td_b2_s133)/temp_td_pib3-(proj_td_b2_s133)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d21  = COMPACT(((temp_tc_d211_s13r3+temp_td_d212_s13r3+temp_td_d214_s13r3)/temp_td_pib3-(proj_tc_d211_s13r3+proj_td_d212_s13r3+proj_td_d214_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d31  = COMPACT(((temp_td_d319_s13r3)/temp_td_pib3-(proj_td_d319_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d29  = COMPACT(((temp_tc_d29_s13r3)/temp_td_pib3-(proj_tc_d29_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d39  = COMPACT(((temp_tc_d39_s13r3)/temp_td_pib3-(proj_tc_d39_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d41  = COMPACT(((temp_tc_d41_s13s3)/temp_td_pib3-(proj_tc_d41_s13s3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d42  = COMPACT(((temp_tc_d42_s13s3)/temp_td_pib3-(proj_tc_d42_s13s3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d4z  = COMPACT(((temp_tc_d4z_s13s3)/temp_td_pib3-(proj_tc_d4z_s13s3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d5   = COMPACT(((temp_tc_d5_s13r3-temp_tc_d5_s13e3)/temp_td_pib3-(proj_tc_d5_s13r3-proj_tc_d5_s13e3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d61  = COMPACT(((temp_tc_d61_s13r3)/temp_td_pib3-(proj_tc_d61_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d7   = COMPACT(((temp_tc_d7_s13s3)/temp_td_pib3-(proj_tc_d7_s13s3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d62  = COMPACT(((temp_tc_d62_s13e3)/temp_td_pib3-(proj_tc_d62_s13e3)/proj_td_pib3)*100,0);
+
+DOSAVE vvara_fipu_d5r  = COMPACT(((temp_tc_d5_s13r3)/temp_td_pib3-(proj_tc_d5_s13r3)/proj_td_pib3)*100,0);
+DOSAVE vvara_fipu_d5e  = COMPACT(((temp_tc_d5_s13e3)/temp_td_pib3-(proj_tc_d5_s13e3)/proj_td_pib3)*100,0);
+
+
+DO print_list = C.(
+	"pcvara_td_pib7_ch",
+	"pcvara_td_b1_sm7_ch",
+	"pcvara_td_p3m_d7_ch",
+	"pcvara_td_p51_d7_ch",
+	"pcvara_td_p51s_d7_ch",
+	"pcvara_td_p6_d7_ch",
+	"pcvara_td_p7_d7_ch",
+	"pcvara_rdbr",
+	"vvara_txepargne",
+	"pcvara_td_p3m_d9_ch",
+	"pcvara_td_p1_d9_ch",
+	"pcvara_TD_P1_sm9_ch",
+	"pcvara_td_b1_d9_ch",
+	"pcvara_TD_b1_sm9_ch",
+	"pcvara_TD_P6_D9_ch",
+	"pcvara_td_p7_d9_ch",
+	"pcvara_wnetreel",
+	"pcvara_smpt_sm7",
+	"pcvara_wreel",
+	"pcvara_coutreelw",
+	"pcvara_tc_cus_sm7_ch",
+	"pcvara_tc_emps_sm7",
+	"vvara_TC_EMPS_sm7",
+	"vvara_tcho",
+	"vvara_pbbalcom",
+	"vvara_tmarge",
+	"vvara_def",
+	"vvara_defprim",
+	"pcvara_ck",
+
+"vvara_fipu_b6", 
+"vvara_fipu_p3g", 
+"vvara_fipu_d9", 
+"vvara_fipu_p51g", 
+"vvara_fipu_p52", 
+"vvara_fipu_np1", 
+"vvara_fipu_b2",  
+"vvara_fipu_d21",  
+"vvara_fipu_d31",  
+"vvara_fipu_d29", 
+"vvara_fipu_d39",  
+"vvara_fipu_d41",  
+"vvara_fipu_d42",  
+"vvara_fipu_d4z",  
+"vvara_fipu_d5", 
+"vvara_fipu_d61",  
+"vvara_fipu_d7",  
+"vvara_fipu_d62",
+
+	"pcvara_td_p2_d9_ch",
+	
+	//Sectoriel
+	"pcvara_td_b1_dai7_ch",
+	"pcvara_td_p3m_dai7_ch",
+	"pcvara_td_p51_dai7_ch",
+	"pcvara_td_p51s_dai7_ch",
+	"pcvara_td_p6_dai7_ch",
+	"pcvara_td_p7_dai7_ch",
+	"pcvara_td_p3m_dai9_ch",
+	"pcvara_td_p1_dai9_ch",
+	"pcvara_td_b1_dai9_ch",
+	"pcvara_td_p2_dai9_ch",
+	"pcvara_td_p2e_dai9_ch",
+	"pcvara_TD_P6_Dai9_ch",
+	"pcvara_td_p7_dai9_ch",
+	
+	"pcvara_td_b1_dse7_ch",
+	"pcvara_td_p3m_dse7_ch",
+	"pcvara_td_p51_dse7_ch",
+	"pcvara_td_p51s_dse7_ch",
+	"pcvara_td_p6_dse7_ch",
+	"pcvara_td_p7_dse7_ch",
+	"pcvara_td_p3m_dse9_ch",
+	"pcvara_td_p1_dse9_ch",
+	"pcvara_td_b1_dse9_ch",
+	"pcvara_td_p2_dse9_ch",
+	"pcvara_td_p2e_dse9_ch",
+	"pcvara_TD_P6_Dse9_ch",
+	"pcvara_td_p7_dse9_ch",
+	
+	"pcvara_td_b1_dsa7_ch",
+	"pcvara_td_p3m_dsa7_ch",
+	"pcvara_td_p51_dsa7_ch",
+	"pcvara_td_p51s_dsa7_ch",
+	"pcvara_td_p6_dsa7_ch",
+	"pcvara_td_p7_dsa7_ch",
+	"pcvara_td_p3m_dsa9_ch",
+	"pcvara_td_p1_dsa9_ch",
+	"pcvara_td_b1_dsa9_ch",
+	"pcvara_td_p2_dsa9_ch",
+	"pcvara_td_p2e_dsa9_ch",
+	"pcvara_TD_P6_Dsa9_ch",
+	"pcvara_td_p7_dsa9_ch",
+	
+	"pcvara_td_b1_nrj7_ch",
+	"pcvara_td_p3m_nrj7_ch",
+	"pcvara_td_p51_nrj7_ch",
+	"pcvara_td_p51s_nrj7_ch",
+	"pcvara_td_p6_nrj7_ch",
+	"pcvara_td_p7_nrj7_ch",
+	"pcvara_td_p3m_nrj9_ch",
+	"pcvara_td_p1_nrj9_ch",
+	"pcvara_td_b1_nrj9_ch",
+	"pcvara_td_p2_nrj9_ch",
+	"pcvara_td_p2e_nrj9_ch",
+	"pcvara_TD_P6_nrj9_ch",
+	"pcvara_td_p7_nrj9_ch",
+	
+	//Marché du travail
+	"pcvara_smpt_q7",
+	"pcvara_tc_emps_q7",
+	"vvara_TC_EMPS_q7",
+	
+	"pcvara_smpt_nq7",
+	"pcvara_tc_emps_nq7",
+	"vvara_TC_EMPS_nq7",
+	
+
+	"pcvara_td_b1_dsn7_ch",
+	"pcvara_td_b1_dsn9_ch",
+	"pcvara_td_p3g_d7_ch",
+	"pcvara_td_p3g_d9_ch",
+	"pcvara_td_p51g_d7_ch",
+	"pcvara_td_p51g_d9_ch",
+	"pcvara_td_p6_dsa7_ch",
+	"pcvara_td_p6_dsa9_ch",
+	"pcvara_td_p6_dsn7_ch",
+	"pcvara_td_p6_dsn9_ch",
+	"pcvara_td_p6_pchtr7_ch",
+	"pcvara_td_p6_pchtr9_ch",
+	"pcvara_td_p7_dsa7_ch",
+	"pcvara_td_p7_dsa9_ch",
+	"pcvara_td_p7_dsn7_ch",
+	"pcvara_td_p7_dsn9_ch",
+	"pcvara_td_p7_pchtr7_ch",
+	"pcvara_td_p7_pchtr9_ch",
+	
+	
+	"pcvara_td_pib3",
+	"pcvara_td_pib9_ch",
+	"pcvara_tc_emp_d1",
+	"vvara_tc_emp_d1",
+	
+		
+	);

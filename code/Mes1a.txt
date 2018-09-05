@@ -1,0 +1,1011 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ***********************************************************************************
+// ***** 1.- Importation de l'ensemble des données Compte Trimestriel             ****
+// ***********************************************************************************
+// Input : -fichier des comptes trimestriels
+// Ouput : -fichier don1a.frm
+
+  // Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE all; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+
+   // Importation des données des comptes trimestriels
+      ACCESS ct  id .\BDD\RD2016T1.frm type formdata mode r; SEARCH ct;
+      ACCESS don id .\BDD\don1a.frm    type formdata mode c; SEARCH don;
+      DO DFDELETE("don",">");
+      DO DFCOPY'F ("ct","don");
+      DELSEARCH ct; DELACCESS ct;
+
+
+   // ***********************************************************************************************************************
+   // ***** RECALAGE DES SERIES EN EURO																				    *****
+   // ***********************************************************************************************************************
+	   
+	   &tbl2ts file "./Ctrim/recalage.wk1";   
+	  DO don_TC_D121_S14AE3 = TC_D121_S14AE3 ;
+	  DO don_tc_d611z_s13r3 = tc_d611z_s13r3 ;
+	  DO don_tc_d623_s14r3  = tc_d623_s14r3 ;
+	  DO don_td_b6_s133     = td_b6_s133 ;
+	  DO don_td_b6_s143     = td_b6_s143 ;
+	  DO don_td_b8_s133     = td_b8_s133 ;
+	  DO don_TC_NP1_S13E3   = TC_NP1_S13E3 ;
+	  DO don_TD_B9NF_S133   = TD_B9NF_S133 ;
+  
+  
+   // ***********************************************************************************************************************
+   // ***** Construction des séries utiles à partir des séries existantes : prix A-1, prix chaîné, volume au prix A-1   *****
+   // ***********************************************************************************************************************
+   // Les branches retenues :
+   // DAI : Agriculture-Industrie  AZ + C1 + C3 + C4 + C5
+   // NRJ : Énergie                DE + C2
+   // DSE : Services exposés       HZ + JZ + KZ + MN
+   // DSA : Services abrités       FZ + GZ + IZ + LZ + RU
+   // DSN : Services non marchands OQ
+      DO INPUT = C.("p1_az",  "p1_de", "p1_c1", "p1_c2", "p1_c3", "p1_c4", "p1_c5", "p1_fz", "p1_gz", "p1_hz", "p1_iz", "p1_jz", "p1_kz", "p1_lz", "p1_mn", "p1_oq", "p1_ru",
+                    "memp_az",  "memp_de", "memp_c1", "memp_c2", "memp_c3", "memp_c4", "memp_c5", "memp_gz", "memp_jz",
+                    "temp_az",  "temp_de", "temp_c1", "temp_c2", "temp_c3", "temp_c4", "temp_c5", "temp_hz", "temp_jz",
+                    "d211_d","d211_az", "d211_de", "d211_c1", "d211_c2", "d211_c3", "d211_c4", "d211_c5", "d211_fz", "d211_gz", "d211_hz", "d211_iz", "d211_jz", "d211_kz", "d211_lz", "d211_mn", "d211_oq", "d211_ru",
+                    "d212_d","d212_db","d212_di","d212_dim","d212_az", "d212_c1", "d212_c2", "d212_c3", "d212_c4", "d212_c5", "d212_jz", 
+                    "d214_d","d214_az", "d214_de", "d214_c1", "d214_c2", "d214_c3", "d214_c4", "d214_c5", "d214_fz", "d214_hz", "d214_iz", "d214_jz", "d214_kz", "d214_lz", "d214_mn", "d214_ru",
+                    "d319_d","d319_db","d319_di","d319_dim","d319_ds","d319_dsm","d319_az", "d319_c1", "d319_c5", /*"d319_fz",*/ "d319_hz", "d319_iz", "d319_kz", /*"d319_mn",*/ "d319_ru",  
+					"p2_d", "p2_az",  "p2_de", "p2_c1", "p2_c2", "p2_c3", "p2_c4", "p2_c5", "p2_fz", "p2_gz", "p2_hz", "p2_iz", "p2_jz", "p2_kz", "p2_lz", "p2_mn", "p2_oq", "p2_ru",
+                    "p3m_az", "p3m_de", "p3m_c1", "p3m_c2", "p3m_c3", "p3m_c4", "p3m_c5", "p3m_fz", "p3m_gz", "p3m_hz", "p3m_iz", "p3m_jz", "p3m_kz", "p3m_lz", "p3m_mn", "p3m_oq", "p3m_ru", "p3m_pchtr",
+                    "p31g_c1","p31g_c3","p31g_c4","p31g_c5","p31g_hz","p31g_iz","p31g_jz","p31g_lz","p31g_mn","p31g_oq","p31g_ru",
+                    "p32g_mn","p32g_oq","p32g_ru",
+                    "p3p_oq", "p3p_ru",
+                    "p51s_az","p51s_c3","p51s_c4","p51s_c5","p51s_fz","p51s_jz","p51s_lz","p51s_mn","p51s_ru",
+                    "p51m_fz","p51m_lz","p51m_mn",
+                    "p51b_c3","p51b_c4","p51b_c5","p51b_fz","p51b_jz","p51b_lz","p51b_mn","p51b_ru",
+                    "p51g_c3","p51g_c4","p51g_c5","p51g_fz","p51g_jz","p51g_mn","p51g_ru",
+                    "p51p_c3","p51p_c4","p51p_c5","p51p_fz","p51p_jz","p51p_mn",
+                    "p6_az"  ,"p6_de"  ,"p6_c1"  ,"p6_c2"  ,"p6_c3"  ,"p6_c4"  ,"p6_c5"  ,"p6_gz"  ,"p6_hz"  ,"p6_jz" ,"p6_kz" ,"p6_mn" ,"p6_oq" ,"p6_ru" ,"p6_pchtr",
+                    "p7_az"  ,"p7_de"  ,"p7_c1"  ,"p7_c2"  ,"p7_c3"  ,"p7_c4"  ,"p7_c5"  ,"p7_gz"  ,"p7_hz"  ,"p7_jz" ,"p7_kz" ,"p7_mn" ,"p7_oq" ,"p7_ru" ,"p7_pchtr" ,"p7_pcafab",
+                    "p73_pcafab","p73_ds","p73_fhza","p73_fkza",
+
+                    "b1_d", "b1_dsn", "b1_az", "b1_de", "b1_c1", "b1_c2", "b1_c3", "b1_c4", "b1_c5", "b1_fz", "b1_gz", "b1_hz", "b1_iz", "b1_jz", "b1_kz", "b1_lz", "b1_mn", "b1_oq", "b1_ru",
+                    "p1e_d","p1e_dsn","p1e_az","p1e_de","p1e_c1","p1e_c2","p1e_c3","p1e_c4","p1e_c5","p1e_fz","p1e_gz","p1e_hz","p1e_iz","p1e_jz","p1e_kz","p1e_lz","p1e_mn","p1e_oq","p1e_ru",
+                    "p2e_d","p2e_dsn","p2e_az","p2e_de","p2e_c1","p2e_c2","p2e_c3","p2e_c4","p2e_c5","p2e_fz","p2e_gz","p2e_hz","p2e_iz","p2e_jz","p2e_kz","p2e_lz","p2e_mn","p2e_oq","p2e_ru",
+                    
+                    "pib",
+                    "p31g_d", "p32g_d", "p31g_dsn", "p32g_dsn","p3p_d", "p3p_dsn", "p3m_d", "p3m_dsn",
+                    "p51_d", "p51m_d", "p51s_d", "p51s_fz", "p51g_d", "p51p_d", "p51b_d", 
+                    "p6_d", "p6_db", "p6_dsn", "p7_d",
+                    "memp_di"
+                    );
+
+      // en CVS-CJO
+         DO cvscjo0    = "td_"||INPUT||"0";       // liste prix A-1
+         DO cvscjo9_ch = "td_"||INPUT||"9_ch";    // liste prix chaînés
+         DO cvscjo7    = "td_"||INPUT||"7";       // liste volume au prix A-1
+         DO cvscjo7_ch = "td_"||INPUT||"7_ch";    // liste volume chaîné
+         DO cvscjo3    = "td_"||INPUT||"3";       // liste valeur
+
+      // en brut
+         DO brut0      = "t_"||INPUT||"0";        // liste prix A-1
+         DO brut9_ch   = "t_"||INPUT||"9_ch";     // liste prix chaînés
+         DO brut7      = "t_"||INPUT||"7";        // liste volume au prix A-1
+         DO brut7_ch   = "t_"||INPUT||"7_ch";     // liste volume chaîné
+         DO brut3      = "t_"||INPUT||"3";        // liste valeur
+
+      &execmd "do don_@(brut0)      = pxbasevolch'f(don_@(brut7_ch),don_@(brut3))" ";";     // vol. chaîné et valeur -> prix A-1 le maillon est brut
+      &execmd "do don_@(cvscjo0)    = pxbasevolch'f(don_@(cvscjo7_ch),don_@(cvscjo3))" ";"; // vol. chaîné et valeur -> prix A-1 le maillon est cvs-cjo
+      &execmd "do don_@(cvscjo9_ch) = 100*don_@(cvscjo3)/don_@(cvscjo7_ch)"            ";"; // prix chaîné (en cvs-cjo)
+      &execmd "do don_@(cvscjo7)    = don_@(brut0)*don_@(cvscjo7_ch)"                  ";"; // vol. chaîné -> vol. prix A-1
+      &execmd "do don_@(brut7)      = don_@(brut0)*don_@(brut7_ch)"                    ";"; // vol. chaîné -> vol. prix A-1 en brut
+
+   // ***********************************************************************************************************************
+   // ***** Construction de séries intermédiaires pour le TES, Décomposition  M + PIB = C + I + DEL(S) + X              *****
+   // ***********************************************************************************************************************
+      // ----------------------------------------
+      // VENTILATION PAR REGROUPEMENT DE BRANCHES
+             DO LIS = C.("d214_gz","d214_oq",
+                        "memp_fz","memp_hz","memp_iz","memp_kz","memp_lz","memp_mn","memp_oq","memp_ru",
+                        "temp_fz","temp_gz","temp_iz","temp_kz","temp_lz","temp_mn","temp_oq","temp_ru",
+                        "p31g_az","p31g_de","p31g_c2","p31g_fz","p31g_gz","p31g_kz",
+                        "p32g_az","p32g_c1","p32g_c2","p32g_c3","p32g_c4","p32g_c5","p32g_de","p32g_fz","p32g_gz","p32g_hz","p32g_iz","p32g_jz","p32g_kz","p32g_lz",
+                        "p3p_az" ,"p3p_de" ,"p3p_c1" ,"p3p_c2" ,"p3p_c3" ,"p3p_c4" ,"p3p_c5", "p3p_fz", "p3p_gz", "p3p_hz", "p3p_iz", "p3p_jz", "p3p_kz", "p3p_lz" ,"p3p_mn",
+                        "p51s_de","p51s_c1","p51s_c2","p51s_gz","p51s_hz","p51s_iz","p51s_kz","p51s_oq",
+                        "p51m_az","p51m_de","p51m_c1","p51m_c2","p51m_c3","p51m_c4","p51m_c5","p51m_gz","p51m_hz","p51m_iz","p51m_jz","p51m_kz","p51m_oq","p51m_ru",
+                        "p51b_az","p51b_de","p51b_c1","p51b_c2","p51b_gz","p51b_hz","p51b_iz","p51b_kz","p51b_oq",
+                        "p51g_az","p51g_de","p51g_c1","p51g_c2","p51g_gz","p51g_hz","p51g_iz","p51g_kz","p51g_lz","p51g_oq",
+                        "p51p_az","p51p_de","p51p_c1","p51p_c2","p51p_gz","p51p_hz","p51p_iz","p51p_kz","p51p_lz","p51p_oq","p51p_ru",
+                        "p52_gz" ,"p52_hz" ,"p52_iz" ,"p52_kz" ,"p52_lz" ,"p52_oq" ,
+                        "p53_az" ,"p53_de" ,"p53_c1" ,"p53_c2" ,"p53_c3" ,"p53_c4" ,"p53_fz" ,"p53_gz" ,"p53_hz" ,"p53_iz" ,"p53_jz" ,"p53_kz" ,"p53_lz" ,"p53_mn" ,"p53_oq" ,"p53_ru",
+                        "p6_fz"  ,"p6_iz"  ,"p6_lz"  ,
+                        "p7_fz"  ,"p7_iz"  ,"p7_lz"  ,
+                        "p73_az" ,"p73_de" ,"p73_c1" ,"p73_c2" ,"p73_c3" ,"p73_c4" ,"p73_c5" ,"p73_fz" ,"p73_gz" ,"p73_iz" ,"p73_jz" ,"p73_lz" ,"p73_mn" ,"p73_oq" ,"p73_ru");
+            
+            DO MAZ = C.("td_"||LIS||"3","td_"||LIS||"7","t_"||LIS||"3","t_"||LIS||"7");
+            &execmd "do don_@(maz) = 0 * td_pib3" ";";
+      
+         // CAS PARTICULIERS correction CAF/FAB et autres corrections dues au chainage
+            DO don_td_p73_hz3=don_td_p73_fhza3, don_td_p73_hz7=don_td_p73_fhza7,
+               don_td_p73_kz3=don_td_p73_fkza3, don_td_p73_kz7=don_td_p73_fkza7,
+               don_t_p73_hz3 =don_t_p73_fhza3,  don_t_p73_hz7 =don_t_p73_fhza7,
+               don_t_p73_kz3 =don_t_p73_fkza3,  don_t_p73_kz7 =don_t_p73_fkza7;
+
+      // CREATION DES AGREGATS TES EN CVS CJO ET EN BRUT
+         DO lis3=C.("p1","p7","memp","temp","d211","d214","p73",
+                    "p2","p3m","p31g","p32g", "p3p","p51s","p51m","p51b","p51g","p51p",
+                    "p52","p53","p6","b1","p1e","p2e"); 
+         DO sec3=C.("td_"||lis3,"t_"||lis3);
+         &execmd "do don_@(sec3)_dai3   =  don_@(sec3)_az3+don_@(sec3)_c13+don_@(sec3)_c33+don_@(sec3)_c43+don_@(sec3)_c53" ";";     // agriculture+industrie
+         &execmd "do don_@(sec3)_nrj3   =  don_@(sec3)_de3+don_@(sec3)_c23"                                              ";";        // énergie
+         &execmd "do don_@(sec3)_dse3   =  don_@(sec3)_hz3+don_@(sec3)_jz3+don_@(sec3)_kz3+don_@(sec3)_mn3"                ";";      // services exposés
+         &execmd "do don_@(sec3)_dsa3   =  don_@(sec3)_fz3+don_@(sec3)_gz3+don_@(sec3)_iz3+don_@(sec3)_lz3+don_@(sec3)_ru3" ";";     // services abrités
+         &execmd "do don_@(sec3)_dsn3   =  don_@(sec3)_oq3" ";";                                                                     // services non marchands
+
+         DO lis7=C.("p1","p7","memp","temp","d211","d214","p73",
+                    "p2","p3m","p31g","p32g","p3p","p51s","p51m","p51b","p51g","p51p",
+                    "p6","b1","p1e","p2e");         
+         DO sec7=C.("td_"||lis7,"t_"||lis7);
+         &execmd "do don_@(sec7)_dai7   =  don_@(sec7)_az7+don_@(sec7)_c17+don_@(sec7)_c37+don_@(sec7)_c47+don_@(sec7)_c57" ";";     // agriculture+industrie
+         &execmd "do don_@(sec7)_nrj7   =  don_@(sec7)_de7+don_@(sec7)_c27"                                              ";";        // énergie
+         &execmd "do don_@(sec7)_dse7   =  don_@(sec7)_hz7+don_@(sec7)_jz7+don_@(sec7)_kz7+don_@(sec7)_mn7"                ";";      // services exposés
+         &execmd "do don_@(sec7)_dsa7   =  don_@(sec7)_fz7+don_@(sec7)_gz7+don_@(sec7)_iz7+don_@(sec7)_lz7+don_@(sec7)_ru7" ";";     // services abrités
+         &execmd "do don_@(sec7)_dsn7   =  don_@(sec7)_oq7" ";";                                                                     // services non marchands
+
+	  // Définition de la rémunération moyenne par EQTP dans le DSN (noté ici 9_ch)
+		 DO don_tc_d1_dsn9_ch = don_tc_d1_dsn3/don_tc_emps_dsn7;
+
+      // CAS PARTICULIERS : D212 et D319
+         DO don_td_d212_dai3 = don_td_d212_az3+don_td_d212_c13+don_td_d212_c33+don_td_d212_c43+don_td_d212_c53 ,
+            don_td_d212_dai7 = don_td_d212_az7+don_td_d212_c17+don_td_d212_c37+don_td_d212_c47+don_td_d212_c57 ,
+            don_t_d212_dai3  = don_t_d212_az3 +don_t_d212_c13 +don_t_d212_c33 +don_t_d212_c43 +don_t_d212_c53  ,
+            don_t_d212_dai7  = don_t_d212_az7 +don_t_d212_c17 +don_t_d212_c37 +don_t_d212_c47 +don_t_d212_c57  ,
+            don_td_d212_nrj3 = don_td_d212_db3-don_td_d212_dai3 ,
+            don_td_d212_nrj7 = don_td_d212_db7-don_td_d212_dai7 ,
+            don_t_d212_nrj3  = don_t_d212_db3-don_t_d212_dai3   ,
+            don_t_d212_nrj7  = don_t_d212_db7-don_t_d212_dai7   ,
+            don_td_d212_dse3 = don_td_d212_jz3 ,
+            don_td_d212_dse7 = don_td_d212_jz7 ,
+            don_t_d212_dse3  = don_t_d212_jz3  ,
+            don_t_d212_dse7  = don_t_d212_jz7  ,
+            don_td_d212_d7   = don_td_d212_dai7+don_td_d212_nrj7+don_td_d212_dse7 , 
+            don_t_d212_d7    = don_t_d212_dai7 +don_t_d212_nrj7 +don_t_d212_dse7  ; 
+
+		
+            // cas particulier D319_FZ D319_MN et D319_OQ
+
+            &tbl2ts file ".\\CTrim\\d319vol.wk1"; 
+            DO don_td_d319_fz7 = td_d319_fz7 , don_t_d319_fz7 = t_d319_fz7 ,
+               don_td_d319_mn7 = td_d319_mn7 , don_t_d319_mn7 = t_d319_mn7 ,
+               don_td_d319_oq7 = td_d319_oq7 , don_t_d319_oq7 = t_d319_oq7 ;
+            
+         DO don_td_d319_dai3 = don_td_d319_az3 +don_td_d319_dim3 ,
+            don_td_d319_dai7 = don_td_d319_az7 +don_td_d319_dim7 ,
+            don_t_d319_dai3  = don_t_d319_az3  +don_t_d319_dim3  ,
+            don_t_d319_dai7  = don_t_d319_az7  +don_t_d319_dim7  ,
+            don_td_d319_nrj3 = don_td_d319_db3 -don_td_d319_dai3 , 
+            don_td_d319_nrj7 = don_td_d319_db7 -don_td_d319_dai7 ,
+            don_t_d319_nrj3  = don_t_d319_db3  -don_t_d319_dai3  ,
+            don_t_d319_nrj7  = don_t_d319_db7  -don_t_d319_dai7  ,
+            don_td_d319_dsa3 = don_td_d319_fz3 +don_td_d319_iz3 +don_td_d319_ru3 ,
+            don_td_d319_dsa7 = don_td_d319_fz7 +don_td_d319_iz7 +don_td_d319_ru7 ,
+            don_t_d319_dsa3  = don_t_d319_fz3  +don_t_d319_iz3  +don_t_d319_ru3  ,
+            don_t_d319_dsa7  = don_t_d319_fz7  +don_t_d319_iz7  +don_t_d319_ru7  ,
+            don_td_d319_dse3 = don_td_d319_hz3 +don_td_d319_kz3 +don_td_d319_mn3 ,
+            don_td_d319_dse7 = don_td_d319_hz7 +don_td_d319_kz7 +don_td_d319_mn7 ,
+            don_t_d319_dse3  = don_t_d319_hz3  +don_t_d319_kz3  +don_t_d319_mn3  ,
+            don_t_d319_dse7  = don_t_d319_hz7  +don_t_d319_kz7  +don_t_d319_mn7  ;
+            DO don_td_d319_oq7=td_d319_oq7, don_t_d319_oq7 =td_d319_oq7;
+            DO don_td_d319_dsn3=don_td_d319_oq3, don_t_d319_dsn3=don_t_d319_oq3, 
+               don_td_d319_dsn7=don_td_d319_oq7, don_t_d319_dsn7=don_t_d319_oq7;
+
+         DO don_td_d319_d7   = don_td_d319_dai7+don_td_d319_nrj7+don_td_d319_dsa7+don_td_d319_dse7+don_td_d319_dsn7 , 
+            don_t_d319_d7    = don_t_d319_dai7 +don_t_d319_nrj7 +don_t_d319_dsa7 +don_t_d319_dse7 +don_t_d319_dsn7  ; 
+            
+         DO don_td_d231_dai3  = don_td_d211_dai3 + don_td_d212_dai3 + don_td_d214_dai3 + don_td_d319_dai3 ,
+            don_td_d231_dai7  = don_td_d211_dai7 + don_td_d212_dai7 + don_td_d214_dai7 + don_td_d319_dai7 ,
+            don_t_d231_dai3   = don_t_d211_dai3  + don_t_d212_dai3  + don_t_d214_dai3  + don_t_d319_dai3  ,
+            don_t_d231_dai7   = don_t_d211_dai7  + don_t_d212_dai7  + don_t_d214_dai7  + don_t_d319_dai7  ,
+            don_td_d231_nrj3  = don_td_d211_nrj3 + don_td_d212_nrj3 + don_td_d214_nrj3 + don_td_d319_nrj3 ,
+            don_td_d231_nrj7  = don_td_d211_nrj7 + don_td_d212_nrj7 + don_td_d214_nrj7 + don_td_d319_nrj7 ,
+            don_t_d231_nrj3   = don_t_d211_nrj3  + don_t_d212_nrj3  + don_t_d214_nrj3  + don_t_d319_nrj3  ,
+            don_t_d231_nrj7   = don_t_d211_nrj7  + don_t_d212_nrj7  + don_t_d214_nrj7  + don_t_d319_nrj7  ,
+            don_td_d231_dse3  = don_td_d211_dse3 + don_td_d212_dse3 + don_td_d214_dse3 + don_td_d319_dse3 ,
+            don_td_d231_dse7  = don_td_d211_dse7 + don_td_d212_dse7 + don_td_d214_dse7 + don_td_d319_dse7 ,
+            don_t_d231_dse3   = don_t_d211_dse3  + don_t_d212_dse3  + don_t_d214_dse3  + don_t_d319_dse3  ,
+            don_t_d231_dse7   = don_t_d211_dse7  + don_t_d212_dse7  + don_t_d214_dse7  + don_t_d319_dse7  ,
+            don_td_d231_dsa3  = don_td_d211_dsa3 +                    don_td_d214_dsa3 + don_td_d319_dsa3 ,
+            don_td_d231_dsa7  = don_td_d211_dsa7 +                    don_td_d214_dsa7 + don_td_d319_dsa7 ,
+            don_t_d231_dsa3   = don_t_d211_dsa3  +                    don_t_d214_dsa3  + don_t_d319_dsa3  ,
+            don_t_d231_dsa7   = don_t_d211_dsa7  +                    don_t_d214_dsa7  + don_t_d319_dsa7  ,
+            don_td_d231_dsn3  = don_td_d211_dsn3 +                    don_td_d214_dsn3 + don_td_d319_dsn3 ,
+            don_td_d231_dsn7  = don_td_d211_dsn7 +                    don_td_d214_dsn7 + don_td_d319_dsn7 ,
+            don_t_d231_dsn3   = don_t_d211_dsn3  +                    don_t_d214_dsn3  + don_t_d319_dsn3  ,
+            don_t_d231_dsn7   = don_t_d211_dsn7  +                    don_t_d214_dsn7  + don_t_d319_dsn7  ;
+         DO don_td_d231_d3    = don_td_d231_dai3 + don_td_d231_nrj3 + don_td_d231_dsa3 + don_td_d231_dse3 + don_td_d231_dsn3 , 
+            don_t_d231_d3     = don_t_d231_dai3  + don_t_d231_nrj3  + don_t_d231_dsa3  + don_t_d231_dse3  + don_t_d231_dsn3  ,
+            don_td_d231_d7    = don_td_d231_dai7 + don_td_d231_nrj7 + don_td_d231_dsa7 + don_td_d231_dse7 + don_td_d231_dsn7 , 
+            don_t_d231_d7     = don_t_d231_dai7  + don_t_d231_nrj7  + don_t_d231_dsa7  + don_t_d231_dse7  + don_t_d231_dsn7  ; 
+
+      // RECALAGE DU TEI
+         DO don_td_p2e_d3   = don_td_p2_d3, don_td_p2e_d7   = don_td_p2_d7, 
+            don_t_p2e_d3    = don_t_p2_d3,  don_t_p2e_d7    = don_t_p2_d7;
+         DO don_td_p2_dai3  = don_td_p2_d3-(don_td_p2_nrj3+don_td_p2_dse3+don_td_p2_dsa3+don_td_p2_dsn3) ,
+            don_td_p2_dai7  = don_td_p2_d7-(don_td_p2_nrj7+don_td_p2_dse7+don_td_p2_dsa7+don_td_p2_dsn7) ,
+            don_t_p2_dai3   = don_t_p2_d3 -(don_t_p2_nrj3+don_t_p2_dse3+don_t_p2_dsa3+don_t_p2_dsn3) ,
+            don_t_p2_dai7   = don_t_p2_d7 -(don_t_p2_nrj7+don_t_p2_dse7+don_t_p2_dsa7+don_t_p2_dsn7) ;
+         DO don_td_p2e_dai3 = don_td_p2e_d3-(don_td_p2e_nrj3+don_td_p2e_dse3+don_td_p2e_dsa3+don_td_p2e_dsn3) ,
+            don_td_p2e_dai7 = don_td_p2e_d7-(don_td_p2e_nrj7+don_td_p2e_dse7+don_td_p2e_dsa7+don_td_p2e_dsn7) ,
+            don_t_p2e_dai3  = don_t_p2e_d3 -(don_t_p2e_nrj3+don_t_p2e_dse3+don_t_p2e_dsa3+don_t_p2e_dsn3) ,
+            don_t_p2e_dai7  = don_t_p2e_d7 -(don_t_p2e_nrj7+don_t_p2e_dse7+don_t_p2e_dsa7+don_t_p2e_dsn7) ;
+
+         // les agrégats finaux + 4 cas particuliers du fait de pcafab : p7_d et p73_d 
+            DO don_temp_p3m_d3 = don_td_p3m_d3 , don_temp_p3m_d7 = don_td_p3m_d7 , 
+               don_temp_p6_d3  = don_td_p6_d3  , don_temp_p6_d7  = don_td_p6_d7  , 
+               don_temp_p7_d3  = don_td_p7_d3  , don_temp_p7_d7  = don_td_p7_d7  ,
+               don_temp_p73_d3 = don_td_p73_ds3+don_td_p73_pcafab3 , don_temp_p73_d7 = don_td_p73_ds7+don_td_p73_pcafab7 ;
+               
+			&execmd "do don_@(sec3)_d3 = don_@(sec3)_dai3+don_@(sec3)_nrj3+don_@(sec3)_dse3+don_@(sec3)_dsa3+don_@(sec3)_dsn3" ";";
+            &execmd "do don_@(sec7)_d7 = don_@(sec7)_dai7+don_@(sec7)_nrj7+don_@(sec7)_dse7+don_@(sec7)_dsa7+don_@(sec7)_dsn7" ";";
+            // cas particuliers du fait de pchtr et pcafab : p3m_d, p6_d, p7_d 
+               DO don_td_p3m_d3 = don_td_p3m_d3+don_td_p3m_pchtr3,
+                  don_td_p3m_d7 = don_td_p3m_d7+don_td_p3m_pchtr7,
+                  don_t_p3m_d3  = don_t_p3m_d3 +don_t_p3m_pchtr3 ,
+                  don_t_p3m_d7  = don_t_p3m_d7 +don_t_p3m_pchtr7 ,
+                  don_td_p6_d3  = don_td_p6_d3 +don_td_p6_pchtr3 ,
+                  don_td_p6_d7  = don_td_p6_d7 +don_td_p6_pchtr7 ,
+                  don_t_p6_d3   = don_t_p6_d3  +don_t_p6_pchtr3  ,
+                  don_t_p6_d7   = don_t_p6_d7  +don_t_p6_pchtr7  ,
+                  don_td_p7_d3  = don_td_p7_d3 +don_td_p7_pchtr3+don_td_p7_pcafab3 ,
+                  don_td_p7_d7  = don_td_p7_d7 +don_td_p7_pchtr7+don_td_p7_pcafab7 ,
+                  don_t_p7_d3   = don_t_p7_d3  +don_t_p7_pchtr3 +don_t_p7_pcafab3  ,
+                  don_t_p7_d7   = don_t_p7_d7  +don_t_p7_pchtr7 +don_t_p7_pcafab7  ;
+            
+               DO don_td_p73_d3 = don_td_p73_d3+don_td_p73_pcafab3 ,
+                  don_td_p73_d7 = don_td_p73_d7+don_td_p73_pcafab7 ,
+                  don_t_p73_d3  = don_t_p73_d3 +don_t_p73_pcafab3  ,
+                  don_t_p73_d7  = don_t_p73_d7 +don_t_p73_pcafab7  ;
+
+		// secteur marchand
+			do 	don_td_p1_sm3 = don_td_p1_d3 - don_td_p1_dsn3,
+				don_td_p1_sm7 = don_td_p1_d7 - don_td_p1_dsn7,
+				don_t_p1_sm3 = don_t_p1_d3 - don_t_p1_dsn3,
+				don_t_p1_sm7 = don_t_p1_d7 - don_t_p1_dsn7,
+				
+				don_td_p3m_sm3 = don_td_p3m_d3 - don_td_p3m_dsn3,
+				don_td_p3m_sm7 = don_td_p3m_d7 - don_td_p3m_dsn7,
+				don_t_p3m_sm3 = don_t_p3m_d3 - don_t_p3m_dsn3,
+				don_t_p3m_sm7 = don_t_p3m_d7 - don_t_p3m_dsn7,
+				
+				don_td_p6_sm3 = don_td_p6_d3 - don_td_p6_dsn3,
+				don_td_p6_sm7 = don_td_p6_d7 - don_td_p6_dsn7,
+				don_t_p6_sm3 = don_t_p6_d3 - don_t_p6_dsn3,
+				don_t_p6_sm7 = don_t_p6_d7 - don_t_p6_dsn7;
+				
+				
+										
+
+            // vérifications 
+            
+               DO PRT.(C.(MAXS(don_td_p3m_d3-don_temp_p3m_d3),MINS(don_td_p3m_d3-don_temp_p3m_d3)));
+               DO PRT.(C.(MAXS(don_td_p3m_d7-don_temp_p3m_d7),MINS(don_td_p3m_d7-don_temp_p3m_d7)));
+               DO PRT.(C.(MAXS(don_td_p6_d3 -don_temp_p6_d3), MINS(don_td_p6_d3 -don_temp_p6_d3)));
+               DO PRT.(C.(MAXS(don_td_p6_d7 -don_temp_p6_d7), MINS(don_td_p6_d7 -don_temp_p6_d7)));
+               DO PRT.(C.(MAXS(don_td_p7_d3 -don_temp_p7_d3), MINS(don_td_p7_d3 -don_temp_p7_d3)));
+               DO PRT.(C.(MAXS(don_td_p7_d7 -don_temp_p7_d7), MINS(don_td_p7_d7 -don_temp_p7_d7)));
+               DO PRT.(C.(MAXS(don_td_p73_d3-don_temp_p73_d3),MINS(don_td_p73_d3-don_temp_p73_d3)));
+               DO PRT.(C.(MAXS(don_td_p73_d7-don_temp_p73_d7),MINS(don_td_p73_d7-don_temp_p73_d7)));
+               DO PRT.(C.(MINS(td_d211_d3-(td_d211_dai3+td_d211_nrj3+td_d211_dse3+td_d211_dsa3+td_d211_dsn3)),
+						  MAXS(td_d211_d3-(td_d211_dai3+td_d211_nrj3+td_d211_dse3+td_d211_dsa3+td_d211_dsn3))));
+               DO PRT.(C.(MINS(td_d211_d7-(td_d211_dai7+td_d211_nrj7+td_d211_dse7+td_d211_dsa7+td_d211_dsn7)),
+						  MAXS(td_d211_d7-(td_d211_dai7+td_d211_nrj7+td_d211_dse7+td_d211_dsa7+td_d211_dsn7))));
+               DO PRT.(C.(MINS(td_d212_d3-(td_d212_dai3+td_d212_nrj3+td_d212_dse3)),
+						  MAXS(td_d212_d3-(td_d212_dai3+td_d212_nrj3+td_d212_dse3))));
+               DO PRT.(C.(MINS(td_d212_d7-(td_d212_dai7+td_d212_nrj7+td_d212_dse7)),
+						  MAXS(td_d212_d7-(td_d212_dai7+td_d212_nrj7+td_d212_dse7))));
+               DO PRT.(C.(MINS(td_d214_d3-(td_d214_dai3+td_d214_nrj3+td_d214_dse3+td_d214_dsa3+td_d214_dsn3)),
+						  MAXS(td_d214_d3-(td_d214_dai3+td_d214_nrj3+td_d214_dse3+td_d214_dsa3+td_d214_dsn3))));
+               DO PRT.(C.(MINS(td_d214_d7-(td_d214_dai7+td_d214_nrj7+td_d214_dse7+td_d214_dsa7+td_d214_dsn7)),
+						  MAXS(td_d214_d7-(td_d214_dai7+td_d214_nrj7+td_d214_dse7+td_d214_dsa7+td_d214_dsn7))));
+               DO PRT.(C.(MINS(td_d319_d3-(td_d319_dai3+td_d319_nrj3+td_d319_dse3+td_d319_dsa3+td_d319_dsn3)),
+						  MAXS(td_d319_d3-(td_d319_dai3+td_d319_nrj3+td_d319_dse3+td_d319_dsa3+td_d319_dsn3))));
+               DO PRT.(C.(MINS(td_d319_d7-(td_d319_dai7+td_d319_nrj7+td_d319_dse7+td_d319_dsa7+td_d319_dsn7)),
+						  MAXS(td_d319_d7-(td_d319_dai7+td_d319_nrj7+td_d319_dse7+td_d319_dsa7+td_d319_dsn7))));
+
+   // DEMANDE : LES PRINCIPAUX POSTES 
+      // DEMANDE : CONSO APU P3G = P31G + P32G
+      DO don_td_p3g_d3   = don_td_p31g_d3   + don_td_p32g_d3   , // D
+         don_td_p3g_d7   = don_td_p31g_d7   + don_td_p32g_d7   ,
+         don_t_p3g_d3    = don_t_p31g_d3    + don_t_p32g_d3    ,
+         don_t_p3g_d7    = don_t_p31g_d7    + don_t_p32g_d7    ;    
+      DO don_td_p3g_az3  = don_td_p31g_az3  + don_td_p32g_az3  , // AZ
+         don_td_p3g_az7  = don_td_p31g_az7  + don_td_p32g_az7  ,
+         don_t_p3g_az3   = don_t_p31g_az3   + don_t_p32g_az3   ,
+         don_t_p3g_az7   = don_t_p31g_az7   + don_t_p32g_az7   ;         
+      DO don_td_p3g_dai3 = don_td_p31g_dai3 + don_td_p32g_dai3 , // DAI 
+         don_td_p3g_dai7 = don_td_p31g_dai7 + don_td_p32g_dai7 ,
+         don_t_p3g_dai3  = don_t_p31g_dai3  + don_t_p32g_dai3  ,
+         don_t_p3g_dai7  = don_t_p31g_dai7  + don_t_p32g_dai7  ;      
+      DO don_td_p3g_nrj3 = don_td_p31g_nrj3 + don_td_p32g_nrj3 , // NRJ 
+         don_td_p3g_nrj7 = don_td_p31g_nrj7 + don_td_p32g_nrj7 ,
+         don_t_p3g_nrj3  = don_t_p31g_nrj3  + don_td_p32g_nrj3 , 
+         don_t_p3g_nrj7  = don_t_p31g_nrj7  + don_td_p32g_nrj7 ;      
+      DO don_td_p3g_dse3 = don_td_p31g_dse3 + don_td_p32g_dse3 , // DSE 
+         don_td_p3g_dse7 = don_td_p31g_dse7 + don_td_p32g_dse7 ,
+         don_t_p3g_dse3  = don_t_p31g_dse3  + don_t_p32g_dse3  ,
+         don_t_p3g_dse7  = don_t_p31g_dse7  + don_t_p32g_dse7  ;      
+      DO don_td_p3g_dsa3 = don_td_p31g_dsa3 + don_td_p32g_dsa3 , // DSA 
+         don_td_p3g_dsa7 = don_td_p31g_dsa7 + don_td_p32g_dsa7 ,
+         don_t_p3g_dsa3  = don_t_p31g_dsa3  + don_t_p32g_dsa3  , 
+         don_t_p3g_dsa7  = don_t_p31g_dsa7  + don_t_p32g_dsa7  ;      
+      DO don_td_p3g_dsn3 = don_td_p31g_dsn3 + don_td_p32g_dsn3 , // DSN 
+         don_td_p3g_dsn7 = don_td_p31g_dsn7 + don_td_p32g_dsn7 ,
+         don_t_p3g_dsn3  = don_t_p31g_dsn3  + don_t_p32g_dsn3  , 
+         don_t_p3g_dsn7  = don_t_p31g_dsn7  + don_t_p32g_dsn7  ;     
+     do don_td_p3g_sm3 = don_td_p3g_d3 - don_td_p3g_dsn3,
+     	don_td_p3g_sm7 = don_td_p3g_d7 - don_td_p3g_dsn7,
+     	don_t_p3g_sm3 = don_t_p3g_d3 - don_t_p3g_dsn3,
+     	don_t_p3g_sm7 = don_t_p3g_d7 - don_t_p3g_dsn7 ;
+  	    	
+     	
+     		
+      // DEMANDE : CONSO TOTALE P3 = P3G + P3M + P3P	    
+      DO don_td_p3_d3     = don_td_p3g_d3    + don_td_p3m_d3    + don_td_p3p_d3   , // D
+         don_td_p3_d7     = don_td_p3g_d7    + don_td_p3m_d7    + don_td_p3p_d7   ,  
+         don_t_p3_d3      = don_t_p3g_d3     + don_t_p3m_d3     + don_t_p3p_d3    ,  
+         don_t_p3_d7      = don_t_p3g_d7     + don_t_p3m_d7     + don_t_p3p_d7    ,         
+		 don_td_p3_dai3   = don_td_p3g_dai3  + don_td_p3m_dai3  + don_td_p3p_dai3 , // DAI
+         don_td_p3_dai7   = don_td_p3g_dai7  + don_td_p3m_dai7  + don_td_p3p_dai7 ,  
+         don_t_p3_dai3    = don_t_p3g_dai3   + don_t_p3m_dai3   + don_t_p3p_dai3  ,  
+         don_t_p3_dai7    = don_t_p3g_dai7   + don_t_p3m_dai7   + don_t_p3p_dai7  ,         
+    	 don_td_p3_dse3   = don_td_p3g_dse3  + don_td_p3m_dse3  + don_td_p3p_dse3 , // DSE
+         don_td_p3_dse7   = don_td_p3g_dse7  + don_td_p3m_dse7  + don_td_p3p_dse7 ,  
+         don_t_p3_dse3    = don_t_p3g_dse3   + don_t_p3m_dse3   + don_t_p3p_dse3  ,  
+         don_t_p3_dse7    = don_t_p3g_dse7   + don_t_p3m_dse7   + don_t_p3p_dse7  ,    
+   		 don_td_p3_dsa3   = don_td_p3g_dsa3  + don_td_p3m_dsa3  + don_td_p3p_dsa3 , // DSA
+         don_td_p3_dsa7   = don_td_p3g_dsa7  + don_td_p3m_dsa7  + don_td_p3p_dsa7 ,  
+         don_t_p3_dsa3    = don_t_p3g_dsa3   + don_t_p3m_dsa3   + don_t_p3p_dsa3  ,  
+         don_t_p3_dsa7    = don_t_p3g_dsa7   + don_t_p3m_dsa7   + don_t_p3p_dsa7  ,    
+    	 don_td_p3_nrj3   = don_td_p3g_nrj3  + don_td_p3m_nrj3  + don_td_p3p_nrj3 , // NRJ
+         don_td_p3_nrj7   = don_td_p3g_nrj7  + don_td_p3m_nrj7  + don_td_p3p_nrj7 ,  
+         don_t_p3_nrj3    = don_t_p3g_nrj3   + don_t_p3m_nrj3   + don_t_p3p_nrj3  ,  
+         don_t_p3_nrj7    = don_t_p3g_nrj7   + don_t_p3m_nrj7   + don_t_p3p_nrj7  ,    
+    	 don_td_p3_dsn3   = don_td_p3g_dsn3  + don_td_p3m_dsn3  + don_td_p3p_dsn3 , // DSN
+         don_td_p3_dsn7   = don_td_p3g_dsn7  + don_td_p3m_dsn7  + don_td_p3p_dsn7 ,  
+         don_t_p3_dsn3    = don_t_p3g_dsn3   + don_t_p3m_dsn3   + don_t_p3p_dsn3  ,  
+         don_t_p3_dsn7    = don_t_p3g_dsn7   + don_t_p3m_dsn7   + don_t_p3p_dsn7  ; 
+    
+    	// DEMANDE : P4M = P3M + P31G + P3P = P3 - P32G 
+      DO don_td_p4m_d3     = don_td_p3_d3    - don_td_p32g_d3    , // D
+         don_td_p4m_d7     = don_td_p3_d7    - don_td_p32g_d7    ,  
+         don_t_p4m_d3      = don_t_p3_d3     - don_t_p32g_d3     ,  
+         don_t_p4m_d7      = don_t_p3_d7     - don_t_p32g_d7     ,         
+		 don_td_p4m_dai3   = don_td_p3_dai3  - don_td_p32g_dai3  , // DAI 
+         don_td_p4m_dai7   = don_td_p3_dai7  - don_td_p32g_dai7  ,  
+         don_t_p4m_dai3    = don_t_p3_dai3   - don_t_p32g_dai3   ,  
+         don_t_p4m_dai7    = don_t_p3_dai7   - don_t_p32g_dai7   ,  
+	 	 don_td_p4m_dse3   = don_td_p3_dse3  - don_td_p32g_dse3  , // DSE
+         don_td_p4m_dse7   = don_td_p3_dse7  - don_td_p32g_dse7  ,  
+         don_t_p4m_dse3    = don_t_p3_dse3   - don_t_p32g_dse3   ,  
+         don_t_p4m_dse7    = don_t_p3_dse7   - don_t_p32g_dse7   ,  		
+		 don_td_p4m_dsa3   = don_td_p3_dsa3  - don_td_p32g_dsa3  , // DSA
+         don_td_p4m_dsa7   = don_td_p3_dsa7  - don_td_p32g_dsa7  ,  
+         don_t_p4m_dsa3    = don_t_p3_dsa3   - don_t_p32g_dsa3   ,  
+         don_t_p4m_dsa7    = don_t_p3_dsa7   - don_t_p32g_dsa7   ,  
+		 don_td_p4m_nrj3   = don_td_p3_nrj3  - don_td_p32g_nrj3  , // NRJ 
+         don_td_p4m_nrj7   = don_td_p3_nrj7  - don_td_p32g_nrj7  ,  
+         don_t_p4m_nrj3    = don_t_p3_nrj3   - don_t_p32g_nrj3   ,  
+         don_t_p4m_nrj7    = don_t_p3_nrj7   - don_t_p32g_nrj7   ,  
+		 don_td_p4m_dsn3   = don_td_p3_dsn3  - don_td_p32g_dsn3  , // DSE
+         don_td_p4m_dsn7   = don_td_p3_dsn7  - don_td_p32g_dsn7  ,  
+         don_t_p4m_dsn3    = don_t_p3_dsn3   - don_t_p32g_dsn3   ,  
+         don_t_p4m_dsn7    = don_t_p3_dsn7   - don_t_p32g_dsn7   ; 
+         
+      // DEMANDE : INVESTISSEMENT TOTAL P51 = P51S + P51M + P51B + P51G + P51P
+      DO don_td_p51_d3    = don_td_p51s_d3   + don_td_p51m_d3   + don_td_p51b_d3   + don_td_p51g_d3   + don_td_p51p_d3   , //D  
+         don_td_p51_d7    = don_td_p51s_d7   + don_td_p51m_d7   + don_td_p51b_d7   + don_td_p51g_d7   + don_td_p51p_d7   ,  
+         don_t_p51_d3     = don_t_p51s_d3    + don_t_p51m_d3    + don_t_p51b_d3    + don_t_p51g_d3    + don_t_p51p_d3    ,
+         don_t_p51_d7     = don_t_p51s_d7    + don_t_p51m_d7    + don_t_p51b_d7    + don_t_p51g_d7    + don_t_p51p_d7    ,   
+   		 don_td_p51_dai3  = don_td_p51s_dai3 + don_td_p51m_dai3 + don_td_p51b_dai3 + don_td_p51g_dai3 + don_td_p51p_dai3 , // DAI
+         don_td_p51_dai7  = don_td_p51s_dai7 + don_td_p51m_dai7 + don_td_p51b_dai7 + don_td_p51g_dai7 + don_td_p51p_dai7 ,  
+         don_t_p51_dai3   = don_t_p51s_dai3  + don_t_p51m_dai3  + don_t_p51b_dai3  + don_t_p51g_dai3  + don_t_p51p_dai3  ,
+         don_t_p51_dai7   = don_t_p51s_dai7  + don_t_p51m_dai7  + don_t_p51b_dai7  + don_t_p51g_dai7  + don_t_p51p_dai7  ,   
+      	 don_td_p51_dse3  = don_td_p51s_dse3 + don_td_p51m_dse3 + don_td_p51b_dse3 + don_td_p51g_dse3 + don_td_p51p_dse3 , // DSE
+         don_td_p51_dse7  = don_td_p51s_dse7 + don_td_p51m_dse7 + don_td_p51b_dse7 + don_td_p51g_dse7 + don_td_p51p_dse7 ,  
+         don_t_p51_dse3   = don_t_p51s_dse3  + don_t_p51m_dse3  + don_t_p51b_dse3  + don_t_p51g_dse3  + don_t_p51p_dse3  ,
+         don_t_p51_dse7   = don_t_p51s_dse7  + don_t_p51m_dse7  + don_t_p51b_dse7  + don_t_p51g_dse7  + don_t_p51p_dse7  ,    
+         don_td_p51_dsa3  = don_td_p51s_dsa3 + don_td_p51m_dsa3 + don_td_p51b_dsa3 + don_td_p51g_dsa3 + don_td_p51p_dsa3 , // DSA
+         don_td_p51_dsa7  = don_td_p51s_dsa7 + don_td_p51m_dsa7 + don_td_p51b_dsa7 + don_td_p51g_dsa7 + don_td_p51p_dsa7 ,  
+         don_t_p51_dsa3   = don_t_p51s_dsa3  + don_t_p51m_dsa3  + don_t_p51b_dsa3  + don_t_p51g_dsa3  + don_t_p51p_dsa3  ,
+         don_t_p51_dsa7   = don_t_p51s_dsa7  + don_t_p51m_dsa7  + don_t_p51b_dsa7  + don_t_p51g_dsa7  + don_t_p51p_dsa7  ,         
+         don_td_p51_nrj3  = don_td_p51s_nrj3 + don_td_p51m_nrj3 + don_td_p51b_nrj3 + don_td_p51g_nrj3 + don_td_p51p_nrj3 , // NRJ
+         don_td_p51_nrj7  = don_td_p51s_nrj7 + don_td_p51m_nrj7 + don_td_p51b_nrj7 + don_td_p51g_nrj7 + don_td_p51p_nrj7 ,  
+         don_t_p51_nrj3   = don_t_p51s_nrj3  + don_t_p51m_nrj3  + don_t_p51b_nrj3  + don_t_p51g_nrj3  + don_t_p51p_nrj3  ,
+         don_t_p51_nrj7   = don_t_p51s_nrj7  + don_t_p51m_nrj7  + don_t_p51b_nrj7  + don_t_p51g_nrj7  + don_t_p51p_nrj7  ,         
+         don_td_p51_dsn3  = don_td_p51s_dsn3 + don_td_p51m_dsn3 + don_td_p51b_dsn3 + don_td_p51g_dsn3 + don_td_p51p_dsn3 , // DSN
+         don_td_p51_dsn7  = don_td_p51s_dsn7 + don_td_p51m_dsn7 + don_td_p51b_dsn7 + don_td_p51g_dsn7 + don_td_p51p_dsn7 ,  
+         don_t_p51_dsn3   = don_t_p51s_dsn3  + don_t_p51m_dsn3  + don_t_p51b_dsn3  + don_t_p51g_dsn3  + don_t_p51p_dsn3  ,
+         don_t_p51_dsn7   = don_t_p51s_dsn7  + don_t_p51m_dsn7  + don_t_p51b_dsn7  + don_t_p51g_dsn7  + don_t_p51p_dsn7  ;
+   
+      // DEMANDE : PRODUITS SMNA HORS INVT XX_SMNA = XX_D - XX_DSN - XX_AZ
+      DO don_td_p3m_smna3 = don_td_p3m_d3 - don_td_p3m_dsn3 - don_td_p3m_az3 , // P3M
+         don_td_p3m_smna7 = don_td_p3m_d7 - don_td_p3m_dsn7 - don_td_p3m_az7 ,
+         don_t_p3m_smna3  = don_t_p3m_d3  - don_t_p3m_dsn3  - don_t_p3m_az3  ,
+         don_t_p3m_smna7  = don_t_p3m_d7  - don_t_p3m_dsn7  - don_t_p3m_az7  ;
+      DO don_td_p3g_smna3 = don_td_p3g_d3 - don_td_p3g_dsn3 - don_td_p3g_az3 , // P3G 
+         don_td_p3g_smna7 = don_td_p3g_d7 - don_td_p3g_dsn7 - don_td_p3g_az7 ,
+         don_t_p3g_smna3  = don_t_p3g_d3  - don_t_p3g_dsn3  - don_t_p3g_az3  ,
+         don_t_p3g_smna7  = don_t_p3g_d7  - don_t_p3g_dsn7  - don_t_p3g_az3  ;
+      DO don_td_p3p_smna3 = don_td_p3p_d3 - don_td_p3p_dsn3 - don_td_p3p_az3 , // P3P
+         don_td_p3p_smna7 = don_td_p3p_d7 - don_td_p3p_dsn7 - don_td_p3p_az7 ,
+         don_t_p3p_smna3  = don_t_p3p_d3  - don_t_p3p_dsn3  - don_t_p3p_az3  ,
+         don_t_p3p_smna7  = don_t_p3p_d7  - don_t_p3p_dsn7  - don_t_p3p_az7  ;
+      DO don_td_p6_smna3  = don_td_p6_d3  - don_td_p6_dsn3  - don_td_p6_az3  , // P6
+         don_td_p6_smna7  = don_td_p6_d7  - don_td_p6_dsn7  - don_td_p6_az7  ,
+         don_t_p6_smna3   = don_t_p6_d3   - don_t_p6_dsn3   - don_t_p6_az3   ,
+         don_t_p6_smna7   = don_t_p6_d7   - don_t_p6_dsn7   - don_t_p6_az7   ;
+
+   // STOCKS ET ACQUISITIONS MOINS CESSIONS D'OBJETS DE VALEUR p54
+      DO don_td_p54_dai3=  don_td_p1_dai3+don_td_p7_dai3+don_td_p73_dai3+don_td_memp_dai3+don_td_temp_dai3+don_td_d231_dai3
+                         -(don_td_p2_dai3+don_td_p3_dai3+don_td_p51_dai3+don_td_p6_dai3) ,
+         don_td_p54_dai7=  don_td_p1_dai7+don_td_p7_dai7+don_td_p73_dai7+don_td_memp_dai7+don_td_temp_dai7+don_td_d231_dai7
+                         -(don_td_p2_dai7+don_td_p3_dai7+don_td_p51_dai7+don_td_p6_dai7) ,
+         don_t_p54_dai3=  don_t_p1_dai3+don_t_p7_dai3+don_t_p73_dai3+don_t_memp_dai3+don_t_temp_dai3+don_t_d231_dai3
+                         -(don_t_p2_dai3+don_t_p3_dai3+don_t_p51_dai3+don_t_p6_dai3) ,
+         don_t_p54_dai7=  don_t_p1_dai7+don_t_p7_dai7+don_t_p73_dai7+don_t_memp_dai7+don_t_temp_dai7+don_t_d231_dai7
+                         -(don_t_p2_dai7+don_t_p3_dai7+don_t_p51_dai7+don_t_p6_dai7) ;
+        
+      DO don_td_p54_nrj3=  don_td_p1_nrj3+don_td_p7_nrj3+don_td_p73_nrj3+don_td_memp_nrj3+don_td_temp_nrj3+don_td_d231_nrj3
+                         -(don_td_p2_nrj3+don_td_p3_nrj3+don_td_p51_nrj3+don_td_p6_nrj3) ,
+         don_td_p54_nrj7=  don_td_p1_nrj7+don_td_p7_nrj7+don_td_p73_nrj7+don_td_memp_nrj7+don_td_temp_nrj7+don_td_d231_nrj7
+                         -(don_td_p2_nrj7+don_td_p3_nrj7+don_td_p51_nrj7+don_td_p6_nrj7) ,
+         don_t_p54_nrj3=  don_t_p1_nrj3+don_t_p7_nrj3+don_t_p73_nrj3+don_t_memp_nrj3+don_t_temp_nrj3+don_t_d231_nrj3
+                         -(don_t_p2_nrj3+don_t_p3_nrj3+don_t_p51_nrj3+don_t_p6_nrj3) ,
+         don_t_p54_nrj7=  don_t_p1_nrj7+don_t_p7_nrj7+don_t_p73_nrj7+don_t_memp_nrj7+don_t_temp_nrj7+don_t_d231_nrj7
+                         -(don_t_p2_nrj7+don_t_p3_nrj7+don_t_p51_nrj7+don_t_p6_nrj7) ;
+
+      DO don_td_p54_dse3=  don_td_p1_dse3+don_td_p7_dse3+don_td_p73_dse3+don_td_memp_dse3+don_td_temp_dse3+don_td_d231_dse3
+                         -(don_td_p2_dse3+don_td_p3_dse3+don_td_p51_dse3+don_td_p6_dse3) ,
+         don_td_p54_dse7=  don_td_p1_dse7+don_td_p7_dse7+don_td_p73_dse7+don_td_memp_dse7+don_td_temp_dse7+don_td_d231_dse7
+                         -(don_td_p2_dse7+don_td_p3_dse7+don_td_p51_dse7+don_td_p6_dse7) ,
+         don_t_p54_dse3=  don_t_p1_dse3+don_t_p7_dse3+don_t_p73_dse3+don_t_memp_dse3+don_t_temp_dse3+don_t_d231_dse3
+                         -(don_t_p2_dse3+don_t_p3_dse3+don_t_p51_dse3+don_t_p6_dse3) ,
+         don_t_p54_dse7=  don_t_p1_dse7+don_t_p7_dse7+don_t_p73_dse7+don_t_memp_dse7+don_t_temp_dse7+don_t_d231_dse7
+                         -(don_t_p2_dse7+don_t_p3_dse7+don_t_p51_dse7+don_t_p6_dse7) ;
+
+      DO don_td_p54_dsa3=  don_td_p1_dsa3+don_td_p7_dsa3+don_td_p73_dsa3+don_td_memp_dsa3+don_td_temp_dsa3+don_td_d231_dsa3
+                         -(don_td_p2_dsa3+don_td_p3_dsa3+don_td_p51_dsa3+don_td_p6_dsa3) ,
+         don_td_p54_dsa7=  don_td_p1_dsa7+don_td_p7_dsa7+don_td_p73_dsa7+don_td_memp_dsa7+don_td_temp_dsa7+don_td_d231_dsa7
+                         -(don_td_p2_dsa7+don_td_p3_dsa7+don_td_p51_dsa7+don_td_p6_dsa7) ,
+         don_t_p54_dsa3=  don_t_p1_dsa3+don_t_p7_dsa3+don_t_p73_dsa3+don_t_memp_dsa3+don_t_temp_dsa3+don_t_d231_dsa3
+                         -(don_t_p2_dsa3+don_t_p3_dsa3+don_t_p51_dsa3+don_t_p6_dsa3) ,
+         don_t_p54_dsa7=  don_t_p1_dsa7+don_t_p7_dsa7+don_t_p73_dsa7+don_t_memp_dsa7+don_t_temp_dsa7+don_t_d231_dsa7
+                         -(don_t_p2_dsa7+don_t_p3_dsa7+don_t_p51_dsa7+don_t_p6_dsa7) ;
+
+      DO don_temp_p54_d3 = don_td_p54_d3 ;
+	  DO don_td_p54_d3 = don_td_p54_dai3+don_td_p54_nrj3+don_td_p54_dse3+don_td_p54_dsa3 ,
+	     don_td_p54_d7 = don_td_p54_dai7+don_td_p54_nrj7+don_td_p54_dse7+don_td_p54_dsa7 ,
+	     don_t_p54_d3  = don_t_p54_dai3 +don_t_p54_nrj3 +don_t_p54_dse3 +don_t_p54_dsa3  ,
+	     don_t_p54_d7  = don_t_p54_dai7 +don_t_p54_nrj7 +don_t_p54_dse7 +don_t_p54_dsa7  ;
+      DO PRT.(C.(MINS(don_temp_p54_d3-don_td_p54_d3),MAXS(don_temp_p54_d3-don_td_p54_d3)));
+		
+	      
+      DO listp41 = C.("d","dai","dse","dsa","nrj","dsn") ;
+	  &execmd "do don_td_p41_@(listp41)3=don_td_p3m_@(listp41)3+don_td_p31g_@(listp41)3+don_td_p3p_@(listp41)3 ;";
+	  &execmd "DO don_td_p41_@(listp41)7=don_td_p3m_@(listp41)7+don_td_p31g_@(listp41)7+don_td_p3p_@(listp41)7;" ;
+		
+	  &execmd "DO don_t_p41_@(listp41)3=don_t_p3m_@(listp41)3+don_t_p31g_@(listp41)3+don_t_p3p_@(listp41)3;" ; 
+	  &execmd "DO don_t_p41_@(listp41)7=don_t_p3m_@(listp41)7+don_t_p31g_@(listp41)7+don_t_p3p_@(listp41)7;" ; 
+
+      
+
+
+   // ***********************************************************************************************************************
+   // ******** Décomposition PIB = VA + D21 + D31 = P1 - P2                                                           *******
+   // ***********************************************************************************************************************
+   // Calcul de la production des branches SMNA
+      DO don_td_p1e_smna3  = don_td_p1e_d3 - don_td_p1e_az3 - don_td_p1e_dsn3 ,
+         don_td_p1e_smna7  = don_td_p1e_d7 - don_td_p1e_az7 - don_td_p1e_dsn7 ,
+         don_t_p1e_smna7   = don_t_p1e_d7  - don_t_p1e_az7  - don_t_p1e_dsn7  ,
+         don_t_p1e_smna3   = don_t_p1e_d3  - don_t_p1e_az3  - don_t_p1e_dsn3  ;
+
+   // Calcul des CI des branches SMNA
+      DO don_td_p2e_smna3  = don_td_p2e_d3 - don_td_p2e_az3 - don_td_p2e_dsn3 ,
+         don_td_p2e_smna7  = don_td_p2e_d7 - don_td_p2e_az7 - don_td_p2e_dsn7 ,
+         don_t_p2e_smna3   = don_t_p2e_d3  - don_t_p2e_az3  - don_t_p2e_dsn3  ,
+         don_t_p2e_smna7   = don_t_p2e_d7  - don_t_p2e_az7  - don_t_p2e_dsn7  ;
+      
+   // Recalcul de la VA SMNA
+      DO don_td_b1_smna3   = don_td_b1_d3 - don_td_b1_az3 - don_td_b1_dsn3 ,
+         don_td_b1_smna7   = don_td_b1_d7 - don_td_b1_az7 - don_td_b1_dsn7 ,
+         don_t_b1_smna7    = don_t_b1_d7  - don_t_b1_az7  - don_t_b1_dsn7  ,
+         don_t_b1_smna3    = don_t_b1_d3  - don_t_b1_az3  - don_t_b1_dsn3  ;
+
+	// Calcul VA secteur marchand yc AZ :
+	  DO don_td_b1_sm3   = don_td_b1_d3 - don_td_b1_dsn3 ,
+         don_td_b1_sm7   = don_td_b1_d7 - don_td_b1_dsn7 ,
+         don_t_b1_sm7    = don_t_b1_d7  - don_t_b1_dsn7  ,
+         don_t_b1_sm3    = don_t_b1_d3  - don_t_b1_dsn3  ;
+
+	
+  
+
+   // VERIFICATION DES ERE AU NIVEAU DES AGREGATS d dai nrj dse dsa dsn
+      DO ver=C.("d3","dai3","nrj3","dse3","dsa3","d7","dai7","nrj7","dse7","dsa7");
+      &execmd "do prt.(c.(maxs(don_td_p1_@(ver)+don_td_p7_@(ver)+don_td_p73_@(ver)+don_td_memp_@(ver)+don_td_temp_@(ver)+don_td_d231_@(ver)-(don_td_p2_@(ver)+don_td_p3_@(ver)+don_td_p51_@(ver)+don_td_p54_@(ver)+don_td_p6_@(ver))),
+                          MINS(don_td_p1_@(ver)+don_td_p7_@(ver)+don_td_p73_@(ver)+don_td_memp_@(ver)+don_td_temp_@(ver)+don_td_d231_@(ver)-(don_td_p2_@(ver)+don_td_p3_@(ver)+don_td_p51_@(ver)+don_td_p54_@(ver)+don_td_p6_@(ver)))))" ";" ;
+      DO ver=C.("dsn3","dsn7");
+      &execmd "do prt.(c.(maxs(don_td_p1_@(ver)+don_td_p7_@(ver)+don_td_p73_@(ver)+don_td_memp_@(ver)+don_td_temp_@(ver)+don_td_d231_@(ver)-(don_td_p2_@(ver)+don_td_p3_@(ver)+don_td_p51_@(ver)+don_td_p6_@(ver))),
+                          MINS(don_td_p1_@(ver)+don_td_p7_@(ver)+don_td_p73_@(ver)+don_td_memp_@(ver)+don_td_temp_@(ver)+don_td_d231_@(ver)-(don_td_p2_@(ver)+don_td_p3_@(ver)+don_td_p51_@(ver)+don_td_p6_@(ver)))))" ";" ;
+      DO ver=C.("pchtr3","pchtr7");
+      &execmd "do prt.(c.(maxs(don_td_p7_@(ver)-(don_td_p3m_@(ver)+don_td_p6_@(ver))),
+                          MINS(don_td_p7_@(ver)-(don_td_p3m_@(ver)+don_td_p6_@(ver)))))" ";" ;
+
+	
+
+   // ***********************************************************************************************************************
+   // ******** Autres variables comptables du TES                                                                    ********
+   // ***********************************************************************************************************************
+ 	 
+ 	 // ajout des p1 yc marges
+ 	DO don_td_p1_ycmg_dai3=don_td_p1_dai3+don_td_memp_dai3;
+	DO don_td_p1_ycmg_dse3=don_td_p1_dse3+don_td_memp_dse3;
+	DO don_td_p1_ycmg_dsa3=don_td_p1_dsa3+don_td_memp_dsa3;
+	DO don_td_p1_ycmg_nrj3=don_td_p1_nrj3+don_td_memp_nrj3;
+	DO don_td_p1_ycmg_dai7=don_td_p1_dai7+don_td_memp_dai7;
+	DO don_td_p1_ycmg_dse7=don_td_p1_dse7+don_td_memp_dse7;
+	DO don_td_p1_ycmg_dsa7=don_td_p1_dsa7+don_td_memp_dsa7;
+	DO don_td_p1_ycmg_nrj7=don_td_p1_nrj7+don_td_memp_nrj7;
+	DO don_td_p1_dhnrj3 = don_td_p1_d3 - don_td_p1_ycmg_nrj3 ;
+	DO don_td_p1_dhnrj7 = don_td_p1_d7 - don_td_p1_ycmg_nrj7 ;
+ 	 
+	DO don_t_p1_ycmg_dai3=don_t_p1_dai3+don_t_memp_dai3;
+	DO don_t_p1_ycmg_dse3=don_t_p1_dse3+don_t_memp_dse3;
+	DO don_t_p1_ycmg_dsa3=don_t_p1_dsa3+don_t_memp_dsa3;
+	DO don_t_p1_ycmg_nrj3=don_t_p1_nrj3+don_t_memp_nrj3;
+	DO don_t_p1_ycmg_dai7=don_t_p1_dai7+don_t_memp_dai7;
+	DO don_t_p1_ycmg_dse7=don_t_p1_dse7+don_t_memp_dse7;
+	DO don_t_p1_ycmg_dsa7=don_t_p1_dsa7+don_t_memp_dsa7;
+	DO don_t_p1_ycmg_nrj7=don_t_p1_nrj7+don_t_memp_nrj7;
+	DO don_t_p1_dhnrj3 = don_t_p1_d3 - don_t_p1_ycmg_nrj3 ;
+	DO don_t_p1_dhnrj7 = don_t_p1_d7 - don_t_p1_ycmg_nrj7 ;
+ 	
+ 	
+	//Ressources nationales totales (hors marges de transport)
+
+	DO don_td_rntpp_dai3=don_td_p1_ycmg_dai3 + don_td_p7_dai3 + don_td_d212_dai3 + don_td_d319_dai3;
+	DO don_td_rntpp_dse3=don_td_p1_ycmg_dse3 + don_td_p7_dse3 + don_td_d212_dse3 + don_td_d319_dse3;
+	DO don_td_rntpp_dsa3=don_td_p1_ycmg_dsa3 + don_td_p7_dsa3                    + don_td_d319_dsa3;
+	DO don_td_rntpp_nrj3=don_td_p1_ycmg_nrj3 + don_td_p7_nrj3 + don_td_d212_nrj3 + don_td_d319_nrj3;
+	DO don_td_rntpp_dai7=don_td_p1_ycmg_dai7 + don_td_p7_dai7 + don_td_d212_dai7 + don_td_d319_dai7;
+	DO don_td_rntpp_dse7=don_td_p1_ycmg_dse7 + don_td_p7_dse7 + don_td_d212_dse7 + don_td_d319_dse7;
+	DO don_td_rntpp_dsa7=don_td_p1_ycmg_dsa7 + don_td_p7_dsa7                    + don_td_d319_dsa7;
+	DO don_td_rntpp_nrj7=don_td_p1_ycmg_nrj7 + don_td_p7_nrj7 + don_td_d212_nrj7 + don_td_d319_nrj7;
+	DO don_td_rntpp_dsn3=don_td_p1_dsn3 + don_td_p7_dsn3                + don_td_d319_dsn3;
+	DO don_td_rntpp_dsn7=don_td_p1_dsn7 + don_td_p7_dsn7                + don_td_d319_dsn7;
+	DO don_td_rntpp_d7  =don_td_rntpp_dai7 + don_td_rntpp_dsa7 + don_td_rntpp_dse7 + don_td_rntpp_nrj7 + don_td_rntpp_dsn7 ;
+	DO don_td_rntpp_d3  =don_td_rntpp_dai3 + don_td_rntpp_dsa3 + don_td_rntpp_dse3 + don_td_rntpp_nrj3 + don_td_rntpp_dsn3 ;
+
+
+	DO don_t_rntpp_dai3=don_t_p1_ycmg_dai3 + don_t_p7_dai3 + don_t_d212_dai3 + don_t_d319_dai3;
+	DO don_t_rntpp_dse3=don_t_p1_ycmg_dse3 + don_t_p7_dse3 + don_t_d212_dse3 + don_t_d319_dse3;
+	DO don_t_rntpp_dsa3=don_t_p1_ycmg_dsa3 + don_t_p7_dsa3                    + don_t_d319_dsa3;
+	DO don_t_rntpp_nrj3=don_t_p1_ycmg_nrj3 + don_t_p7_nrj3 + don_t_d212_nrj3 + don_t_d319_nrj3;
+	DO don_t_rntpp_dai7=don_t_p1_ycmg_dai7 + don_t_p7_dai7 + don_t_d212_dai7 + don_t_d319_dai7;
+	DO don_t_rntpp_dse7=don_t_p1_ycmg_dse7 + don_t_p7_dse7 + don_t_d212_dse7 + don_t_d319_dse7;
+	DO don_t_rntpp_dsa7=don_t_p1_ycmg_dsa7 + don_t_p7_dsa7                    + don_t_d319_dsa7;
+	DO don_t_rntpp_nrj7=don_t_p1_ycmg_nrj7 + don_t_p7_nrj7 + don_t_d212_nrj7 + don_t_d319_nrj7;
+	DO don_t_rntpp_dsn3=don_t_p1_dsn3    + don_t_p7_dsn3                + don_t_d319_dsn3;
+	DO don_t_rntpp_dsn7=don_t_p1_dsn7    + don_t_p7_dsn7                + don_t_d319_dsn7;
+	DO don_t_rntpp_d7  =don_t_rntpp_dai7 + don_t_rntpp_dsa7 + don_t_rntpp_dse7 + don_t_rntpp_nrj7 + don_t_rntpp_dsn7 ;
+	DO don_t_rntpp_d3  =don_t_rntpp_dai3 + don_t_rntpp_dsa3 + don_t_rntpp_dse3 + don_t_rntpp_nrj3 + don_t_rntpp_dsn3 ;
+
+ 	
+ 	
+ 	
+ 	 
+ 	 //Ressources nationales totales (au prix d'acquisition)
+      DO don_td_rnt_dai3    = don_td_p1_dai3 + don_td_p7_dai3 + don_td_p73_dai3 + don_td_memp_dai3 + don_td_temp_dai3 + don_td_d231_dai3  , // DAI
+         don_td_rnt_dai7    = don_td_p1_dai7 + don_td_p7_dai7 + don_td_p73_dai7 + don_td_memp_dai7 + don_td_temp_dai7 + don_td_d231_dai7  ,
+         don_t_rnt_dai3     = don_t_p1_dai3  + don_t_p7_dai3  + don_t_p73_dai3  + don_t_memp_dai3  + don_t_temp_dai3  + don_t_d231_dai3   ,
+         don_t_rnt_dai7     = don_t_p1_dai7  + don_t_p7_dai7  + don_t_p73_dai7  + don_t_memp_dai7  + don_t_temp_dai7  + don_t_d231_dai7   ;
+      DO don_td_rnt_dse3    = don_td_p1_dse3 + don_td_p7_dse3 + don_td_p73_dse3 + don_td_memp_dse3 + don_td_temp_dse3 + don_td_d231_dse3  , // DSE
+         don_td_rnt_dse7    = don_td_p1_dse7 + don_td_p7_dse7 + don_td_p73_dse7 + don_td_memp_dse7 + don_td_temp_dse7 + don_td_d231_dse7  ,
+         don_t_rnt_dse3     = don_t_p1_dse3  + don_t_p7_dse3  + don_t_p73_dse3  + don_t_memp_dse3  + don_t_temp_dse3  + don_t_d231_dse3   ,
+         don_t_rnt_dse7     = don_t_p1_dse7  + don_t_p7_dse7  + don_t_p73_dse7  + don_t_memp_dse7  + don_t_temp_dse7  + don_t_d231_dse7   ;
+      DO don_td_rnt_dsa3    = don_td_p1_dsa3 + don_td_p7_dsa3 + don_td_p73_dsa3 + don_td_memp_dsa3 + don_td_temp_dsa3 + don_td_d231_dsa3  , // DSA
+         don_td_rnt_dsa7    = don_td_p1_dsa7 + don_td_p7_dsa7 + don_td_p73_dsa7 + don_td_memp_dsa7 + don_td_temp_dsa7 + don_td_d231_dsa7  ,
+         don_t_rnt_dsa3     = don_t_p1_dsa3  + don_t_p7_dsa3  + don_t_p73_dsa3  + don_t_memp_dsa3  + don_t_temp_dsa3  + don_t_d231_dsa3   ,
+         don_t_rnt_dsa7     = don_t_p1_dsa7  + don_t_p7_dsa7  + don_t_p73_dsa7  + don_t_memp_dsa7  + don_t_temp_dsa7  + don_t_d231_dsa7   ;
+      DO don_td_rnt_nrj3    = don_td_p1_nrj3 + don_td_p7_nrj3 + don_td_p73_nrj3 + don_td_memp_nrj3 + don_td_temp_nrj3 + don_td_d231_nrj3  , // NRJ
+         don_td_rnt_nrj7    = don_td_p1_nrj7 + don_td_p7_nrj7 + don_td_p73_nrj7 + don_td_memp_nrj7 + don_td_temp_nrj7 + don_td_d231_nrj7  ,
+         don_t_rnt_nrj3     = don_t_p1_nrj3  + don_t_p7_nrj3  + don_t_p73_nrj3  + don_t_memp_nrj3  + don_t_temp_nrj3  + don_t_d231_nrj3   ,
+         don_t_rnt_nrj7     = don_t_p1_nrj7  + don_t_p7_nrj7  + don_t_p73_nrj7  + don_t_memp_nrj7  + don_t_temp_nrj7  + don_t_d231_nrj7   ;
+      DO don_td_rnt_dsn3    = don_td_p1_dsn3 + don_td_p7_dsn3 + don_td_p73_dsn3 + don_td_memp_dsn3 + don_td_temp_dsn3 + don_td_d231_dsn3  , // DSN
+         don_td_rnt_dsn7    = don_td_p1_dsn7 + don_td_p7_dsn7 + don_td_p73_dsn7 + don_td_memp_dsn7 + don_td_temp_dsn7 + don_td_d231_dsn7  ,
+         don_t_rnt_dsn3     = don_t_p1_dsn3  + don_t_p7_dsn3  + don_t_p73_dsn3  + don_t_memp_dsn3  + don_t_temp_dsn3  + don_t_d231_dsn3   ,
+         don_t_rnt_dsn7     = don_t_p1_dsn7  + don_t_p7_dsn7  + don_t_p73_dsn7  + don_t_memp_dsn7  + don_t_temp_dsn7  + don_t_d231_dsn7   ;
+     
+	  DO don_td_rnt_d3      = don_td_rnt_dai3 + don_td_rnt_dsa3 + don_td_rnt_dse3 + don_td_rnt_nrj3 + don_td_rnt_dsn3 , // D 
+         don_td_rnt_d7      = don_td_rnt_dai7 + don_td_rnt_dsa7 + don_td_rnt_dse7 + don_td_rnt_nrj7 + don_td_rnt_dsn7 ,
+         don_t_rnt_d3       = don_t_rnt_dai3  + don_t_rnt_dsa3  + don_t_rnt_dse3  + don_t_rnt_nrj3  + don_t_rnt_dsn3  ,
+         don_t_rnt_d7       = don_t_rnt_dai7  + don_t_rnt_dsa7  + don_t_rnt_dse7  + don_t_rnt_nrj7  + don_t_rnt_dsn7  ;	  
+
+ 
+    
+
+
+ 	 //Production sur le marché intérieur 
+      DO don_td_p1mi_dai3   = don_td_p1_dai3+don_td_d319_dai3+(don_td_d211_dai3+don_td_d214_dai3+don_td_temp_dai3+don_td_memp_dai3)*don_td_p1_dai3/(don_td_p1_dai3+don_td_p7_dai3)-don_td_p6_dai3 , // DAI
+         don_td_p1mi_dai7   = don_td_p1_dai7+don_td_d319_dai7+(don_td_d211_dai7+don_td_d214_dai7+don_td_temp_dai7+don_td_memp_dai7)*don_td_p1_dai7/(don_td_p1_dai7+don_td_p7_dai7)-don_td_p6_dai7 ,
+         don_t_p1mi_dai3    = don_t_p1_dai3+don_td_temp_dai3+(don_t_d211_dai3+don_t_d214_dai3+don_t_d319_dai3+don_td_memp_dai3)*don_t_p1_dai3/(don_t_p1_dai3+don_t_p7_dai3)-don_t_p6_dai3  ,
+         don_t_p1mi_dai7    = don_t_p1_dai7+don_td_temp_dai7+(don_t_d211_dai7+don_t_d214_dai7+don_t_d319_dai7+don_td_memp_dai7)*don_t_p1_dai7/(don_t_p1_dai7+don_t_p7_dai7)-don_t_p6_dai7  ;
+      DO don_td_p1mi_dse3   = don_td_p1_dse3+don_td_d319_dse3+(don_td_d211_dse3+don_td_d214_dse3+don_td_temp_dse3+don_td_memp_dse3)*don_td_p1_dse3/(don_td_p1_dse3+don_td_p7_dse3)-don_td_p6_dse3 , // DSE
+         don_td_p1mi_dse7   = don_td_p1_dse7+don_td_d319_dse7+(don_td_d211_dse7+don_td_d214_dse7+don_td_temp_dse7+don_td_memp_dse7)*don_td_p1_dse7/(don_td_p1_dse7+don_td_p7_dse7)-don_td_p6_dse7 ,
+         don_t_p1mi_dse3    = don_t_p1_dse3+don_t_d319_dse3+(don_t_d211_dse3+don_t_d214_dse3+don_td_temp_dse3+don_td_memp_dse3)*don_t_p1_dse3/(don_t_p1_dse3+don_t_p7_dse3)-don_t_p6_dse3  ,
+         don_t_p1mi_dse7    = don_t_p1_dse7+don_t_d319_dse7+(don_t_d211_dse7+don_t_d214_dse7+don_td_temp_dse7+don_td_memp_dse7)*don_t_p1_dse7/(don_t_p1_dse7+don_t_p7_dse7)-don_t_p6_dse7  ;
+      DO don_td_p1mi_dsa3   = don_td_p1_dsa3+don_td_d319_dsa3+(don_td_d211_dsa3+don_td_d214_dsa3+don_td_memp_dsa3)*don_td_p1_dsa3/(don_td_p1_dsa3+don_td_p7_dsa3)-don_td_p6_dsa3 , // DSA
+         don_td_p1mi_dsa7   = don_td_p1_dsa7+don_td_d319_dsa7+(don_td_d211_dsa7+don_td_d214_dsa7+don_td_memp_dsa7)*don_td_p1_dsa7/(don_td_p1_dsa7+don_td_p7_dsa7)-don_td_p6_dsa7 ,
+         don_t_p1mi_dsa3    = don_t_p1_dsa3+don_t_d319_dsa3+(don_t_d211_dsa3+don_t_d214_dsa3+don_td_memp_dsa3)*don_t_p1_dsa3/(don_t_p1_dsa3+don_t_p7_dsa3)-don_t_p6_dsa3  ,
+         don_t_p1mi_dsa7    = don_t_p1_dsa7+don_t_d319_dsa7+(don_t_d211_dsa7+don_t_d214_dsa7+don_td_memp_dsa7)*don_t_p1_dsa7/(don_t_p1_dsa7+don_t_p7_dsa7)-don_t_p6_dsa7  ;
+      DO don_td_p1mi_dsn3   = don_td_p1_dsn3+don_td_d319_dsn3+(don_td_d211_dsn3)*don_td_p1_dsn3/(don_td_p1_dsn3+don_td_p7_dsn3)-don_td_p6_dsn3 , // DSN
+         don_td_p1mi_dsn7   = don_td_p1_dsn7+don_td_d319_dsn7+(don_td_d211_dsn7)*don_td_p1_dsn7/(don_td_p1_dsn7+don_td_p7_dsn7)-don_td_p6_dsn7 ,
+         don_t_p1mi_dsn3    = don_t_p1_dsn3+don_t_d319_dsn3+(don_t_d211_dsn3)*don_t_p1_dsn3/(don_t_p1_dsn3+don_t_p7_dsn3)-don_t_p6_dsn3  ,
+         don_t_p1mi_dsn7    = don_t_p1_dsn7+don_t_d319_dsn7+(don_t_d211_dsn7)*don_t_p1_dsn7/(don_t_p1_dsn7+don_t_p7_dsn7)-don_t_p6_dsn7  ;
+      DO don_td_p1mi_nrj3   = don_td_p1_nrj3+don_td_d319_nrj3+(don_td_d211_nrj3+don_td_d214_nrj3+don_td_temp_nrj3+don_td_memp_nrj3)*don_td_p1_nrj3/(don_td_p1_nrj3+don_td_p7_nrj3)-don_td_p6_nrj3 , // NRJ
+         don_td_p1mi_nrj7   = don_td_p1_nrj7+don_td_d319_nrj7+(don_td_d211_nrj7+don_td_d214_nrj7+don_td_temp_nrj7+don_td_memp_nrj7)*don_td_p1_nrj7/(don_td_p1_nrj7+don_td_p7_nrj7)-don_td_p6_nrj7 ,
+         don_t_p1mi_nrj3    = don_t_p1_nrj3+don_t_d319_nrj3+(don_t_d211_nrj3+don_t_d214_nrj3+don_td_temp_nrj3+don_td_memp_nrj3)*don_t_p1_nrj3/(don_t_p1_nrj3+don_t_p7_nrj3)-don_t_p6_nrj3  ,
+         don_t_p1mi_nrj7    = don_t_p1_nrj7+don_t_d319_nrj7+(don_t_d211_nrj7+don_t_d214_nrj7+don_td_temp_nrj7+don_td_memp_nrj7)*don_t_p1_nrj7/(don_t_p1_nrj7+don_t_p7_nrj7)-don_t_p6_nrj7  ;
+         
+ 	  DO don_td_p1mi_d3     = don_td_p1mi_dai3+don_td_p1mi_dse3+don_td_p1mi_dsa3+don_td_p1mi_nrj3+don_td_p1mi_dsn3 , //D
+         don_td_p1mi_d7     = don_td_p1mi_dai7+don_td_p1mi_dse7+don_td_p1mi_dsa7+don_td_p1mi_nrj7+don_td_p1mi_dsn7 ,
+         don_t_p1mi_d3      = don_t_p1mi_dai3+don_t_p1mi_dse3+don_t_p1mi_dsa3+don_t_p1mi_nrj3+don_t_p1mi_dsn3  ,
+         don_t_p1mi_d7      = don_t_p1mi_dai7+don_t_p1mi_dse7+don_t_p1mi_dsa7+don_t_p1mi_nrj7+don_t_p1mi_dsn7  ;
+      
+     	
+			
+            
+         //Ressources importées (sans PCHTR et PCAFAB)
+	  DO don_td_rim_dai3    = don_td_p7_dai3+don_td_d212_dai3+(don_td_d211_dai3+don_td_d214_dai3+don_td_temp_dai3+don_td_memp_dai3)*don_td_p7_dai3/(don_td_p1_dai3+don_td_p7_dai3) , //DAI
+         don_td_rim_dai7    = don_td_p7_dai7+don_td_d212_dai7+(don_td_d211_dai7+don_td_d214_dai7+don_td_temp_dai7+don_td_memp_dai7)*don_td_p7_dai7/(don_td_p1_dai7+don_td_p7_dai7) ,
+         don_t_rim_dai3     = don_t_p7_dai3 +don_t_d212_dai3 +(don_t_d211_dai3 +don_t_d214_dai3 +don_t_temp_dai3 +don_t_memp_dai3) *don_t_p7_dai3/(don_t_p1_dai3+don_t_p7_dai3) ,
+         don_t_rim_dai7     = don_t_p7_dai7 +don_t_d212_dai7 +(don_t_d211_dai7 +don_t_d214_dai7 +don_t_temp_dai7 +don_t_memp_dai7) *don_t_p7_dai7/(don_t_p1_dai7+don_t_p7_dai7) ;
+	  DO don_td_rim_dse3    = don_td_p7_dse3+don_td_d212_dse3+(don_td_d211_dse3+don_td_d214_dse3+don_td_temp_dse3+don_td_memp_dse3)*don_td_p7_dse3/(don_td_p1_dse3+don_td_p7_dse3) , //DAI
+         don_td_rim_dse7    = don_td_p7_dse7+don_td_d212_dse7+(don_td_d211_dse7+don_td_d214_dse7+don_td_temp_dse7+don_td_memp_dse7)*don_td_p7_dse7/(don_td_p1_dse7+don_td_p7_dse7) ,
+         don_t_rim_dse3     = don_t_p7_dse3 +don_t_d212_dse3 +(don_t_d211_dse3 +don_t_d214_dse3 +don_t_temp_dse3 +don_t_memp_dse3) *don_t_p7_dse3/(don_t_p1_dse3+don_t_p7_dse3) ,
+         don_t_rim_dse7     = don_t_p7_dse7 +don_t_d212_dse7 +(don_t_d211_dse7 +don_t_d214_dse7 +don_t_temp_dse7 +don_t_memp_dse7) *don_t_p7_dse7/(don_t_p1_dse7+don_t_p7_dse7) ;
+	  DO don_td_rim_dsa3    = don_td_p7_dsa3+                 (don_td_d211_dsa3+don_td_d214_dsa3+don_td_memp_dsa3)*don_td_p7_dsa3/(don_td_p1_dsa3+don_td_p7_dsa3) , //DAI
+         don_td_rim_dsa7    = don_td_p7_dsa7+                 (don_td_d211_dsa7+don_td_d214_dsa7+don_td_memp_dsa7)*don_td_p7_dsa7/(don_td_p1_dsa7+don_td_p7_dsa7) ,
+         don_t_rim_dsa3     = don_t_p7_dsa3 +                 (don_t_d211_dsa3 +don_t_d214_dsa3 +don_t_memp_dsa3) *don_t_p7_dsa3/(don_t_p1_dsa3+don_t_p7_dsa3) ,
+         don_t_rim_dsa7     = don_t_p7_dsa7 +                 (don_t_d211_dsa7 +don_t_d214_dsa7 +don_t_memp_dsa7) *don_t_p7_dsa7/(don_t_p1_dsa7+don_t_p7_dsa7) ;
+	  DO don_td_rim_dsn3    = don_td_p7_dsn3+                 (don_td_d211_dsn3)*don_td_p7_dsn3/(don_td_p1_dsn3+don_td_p7_dsn3) , //DAI
+         don_td_rim_dsn7    = don_td_p7_dsn7+                 (don_td_d211_dsn7)*don_td_p7_dsn7/(don_td_p1_dsn7+don_td_p7_dsn7) ,
+         don_t_rim_dsn3     = don_t_p7_dsn3 +                 (don_t_d211_dsn3 ) *don_t_p7_dsn3/(don_t_p1_dsn3+don_t_p7_dsn3) ,
+         don_t_rim_dsn7     = don_t_p7_dsn7 +                 (don_t_d211_dsn7 ) *don_t_p7_dsn7/(don_t_p1_dsn7+don_t_p7_dsn7) ;
+	  DO don_td_rim_nrj3    = don_td_p7_nrj3+don_td_d212_nrj3+(don_td_d211_nrj3+don_td_d214_nrj3+don_td_temp_nrj3+don_td_memp_nrj3)*don_td_p7_nrj3/(don_td_p1_nrj3+don_td_p7_nrj3) , //DAI
+         don_td_rim_nrj7    = don_td_p7_nrj7+don_td_d212_nrj7+(don_td_d211_nrj7+don_td_d214_nrj7+don_td_temp_nrj7+don_td_memp_nrj7)*don_td_p7_nrj7/(don_td_p1_nrj7+don_td_p7_nrj7) ,
+         don_t_rim_nrj3     = don_t_p7_nrj3 +don_t_d212_nrj3 +(don_t_d211_nrj3 +don_t_d214_nrj3 +don_t_temp_nrj3 +don_t_memp_nrj3) *don_t_p7_nrj3/(don_t_p1_nrj3+don_t_p7_nrj3) ,
+         don_t_rim_nrj7     = don_t_p7_nrj7 +don_t_d212_nrj7 +(don_t_d211_nrj7 +don_t_d214_nrj7 +don_t_temp_nrj7 +don_t_memp_nrj7) *don_t_p7_nrj7/(don_t_p1_nrj7+don_t_p7_nrj7) ;
+         
+ 	  DO don_td_rim_d3      = don_td_rim_dai3+don_td_rim_dse3+don_td_rim_dsa3+don_td_rim_nrj3+don_td_rim_dsn3 , //D
+         don_td_rim_d7      = don_td_rim_dai7+don_td_rim_dse7+don_td_rim_dsa7+don_td_rim_nrj7+don_td_rim_dsn7 ,
+         don_t_rim_d3       = don_t_rim_dai3+don_t_rim_dse3+don_t_rim_dsa3+don_t_rim_nrj3+don_t_rim_dsn3  ,
+         don_t_rim_d7       = don_t_rim_dai7+don_t_rim_dse7+don_t_rim_dsa7+don_t_rim_nrj7+don_t_rim_dsn7  ;
+         
+	  //Demande intérieure finale (avec et hors stocks)
+	  DO don_td_DFIntHS_dai3  = don_td_p3_dai3 + don_td_p51_dai3       , // DAI
+         don_td_DFIntHS_dai7  = don_td_p3_dai7 + don_td_p51_dai7       ,
+		 don_t_DFIntHS_dai3   = don_t_p3_dai3  + don_t_p51_dai3        ,
+         don_t_DFIntHS_dai7   = don_t_p3_dai7  + don_t_p51_dai7        ,
+		 don_td_DFInt_dai3    = don_td_DFIntHS_dai3 + don_td_p54_dai3 ,
+         don_td_DFInt_dai7    = don_td_DFIntHS_dai7 + don_td_p54_dai7 ,
+		 don_t_DFInt_dai3     = don_t_DFIntHS_dai3  + don_t_p54_dai3  ,
+         don_t_DFInt_dai7     = don_t_DFIntHS_dai7  + don_t_p54_dai7  ;
+	  DO don_td_DFIntHS_dsa3  = don_td_p3_dsa3 + don_td_p51_dsa3       , // DSA
+         don_td_DFIntHS_dsa7  = don_td_p3_dsa7 + don_td_p51_dsa7       ,
+		 don_t_DFIntHS_dsa3   = don_t_p3_dsa3  + don_t_p51_dsa3        ,
+         don_t_DFIntHS_dsa7   = don_t_p3_dsa7  + don_t_p51_dsa7        ,
+		 don_td_DFInt_dsa3    = don_td_DFIntHS_dsa3 + don_td_p54_dsa3 ,
+         don_td_DFInt_dsa7    = don_td_DFIntHS_dsa7 + don_td_p54_dsa7 ,
+		 don_t_DFInt_dsa3     = don_t_DFIntHS_dsa3  + don_t_p54_dsa3  ,
+         don_t_DFInt_dsa7     = don_t_DFIntHS_dsa7  + don_t_p54_dsa7  ; 
+	  DO don_td_DFIntHS_dse3  = don_td_p3_dse3 + don_td_p51_dse3       , // DSE
+         don_td_DFIntHS_dse7  = don_td_p3_dse7 + don_td_p51_dse7       ,
+		 don_t_DFIntHS_dse3   = don_t_p3_dse3  + don_t_p51_dse3        ,
+         don_t_DFIntHS_dse7   = don_t_p3_dse7  + don_t_p51_dse7        ,
+		 don_td_DFInt_dse3    = don_td_DFIntHS_dse3 + don_td_p54_dse3 ,
+         don_td_DFInt_dse7    = don_td_DFIntHS_dse7 + don_td_p54_dse7 ,
+		 don_t_DFInt_dse3     = don_t_DFIntHS_dse3  + don_t_p54_dse3  ,
+         don_t_DFInt_dse7     = don_t_DFIntHS_dse7  + don_t_p54_dse7  ; 
+	  DO don_td_DFIntHS_nrj3  = don_td_p3_nrj3 + don_td_p51_nrj3       , // NRJ
+         don_td_DFIntHS_nrj7  = don_td_p3_nrj7 + don_td_p51_nrj7       ,
+		 don_t_DFIntHS_nrj3   = don_t_p3_nrj3  + don_t_p51_nrj3        ,
+         don_t_DFIntHS_nrj7   = don_t_p3_nrj7  + don_t_p51_nrj7        ,
+		 don_td_DFInt_nrj3    = don_td_DFIntHS_nrj3 + don_td_p54_nrj3 ,
+         don_td_DFInt_nrj7    = don_td_DFIntHS_nrj7 + don_td_p54_nrj7 ,
+		 don_t_DFInt_nrj3     = don_t_DFIntHS_nrj3  + don_t_p54_nrj3  ,
+         don_t_DFInt_nrj7     = don_t_DFIntHS_nrj7  + don_t_p54_nrj7  ; 
+	  DO don_td_DFIntHS_dsn3  = don_td_p3_dsn3 + don_td_p51_dsn3       , // DSN 
+         don_td_DFIntHS_dsn7  = don_td_p3_dsn7 + don_td_p51_dsn7       ,
+		 don_t_DFIntHS_dsn3   = don_t_p3_dsn3  + don_t_p51_dsn3        ,
+         don_t_DFIntHS_dsn7   = don_t_p3_dsn7  + don_t_p51_dsn7        ,
+		 don_td_DFInt_dsn3    = don_td_DFIntHS_dsn3                    , 
+         don_td_DFInt_dsn7    = don_td_DFIntHS_dsn7                    ,
+		 don_t_DFInt_dsn3     = don_t_DFIntHS_dsn3                     ,
+         don_t_DFInt_dsn7     = don_t_DFIntHS_dsn7                     ; 
+		 
+	  DO don_td_DFIntHS_d3    =  don_td_DFIntHS_dai3 + don_td_DFIntHS_dsa3 + don_td_DFIntHS_dse3 + don_td_DFIntHS_nrj3 + don_td_DFIntHS_dsn3 , // D
+         don_td_DFIntHS_d7    =  don_td_DFIntHS_dai7 + don_td_DFIntHS_dsa7 + don_td_DFIntHS_dse7 + don_td_DFIntHS_nrj7 + don_td_DFIntHS_dsn7 ,
+		 don_t_DFIntHS_d3     =  don_t_DFIntHS_dai3  + don_t_DFIntHS_dsa3  + don_t_DFIntHS_dse3  + don_t_DFIntHS_nrj3  + don_t_DFIntHS_dsn3  ,
+         don_t_DFIntHS_d7     =  don_t_DFIntHS_dai7  + don_t_DFIntHS_dsa7  + don_t_DFIntHS_dse7  + don_t_DFIntHS_nrj7  + don_t_DFIntHS_dsn7  ,
+		 don_td_DFInt_d3      =  don_td_DFInt_dai3   + don_td_DFInt_dsa3   + don_td_DFInt_dse3   + don_td_DFInt_nrj3   + don_td_DFInt_dsn3   ,
+         don_td_DFInt_d7      =  don_td_DFInt_dai7   + don_td_DFInt_dsa7   + don_td_DFInt_dse7   + don_td_DFInt_nrj7   + don_td_DFInt_dsn7   ,
+		 don_t_DFInt_d3       =  don_t_DFInt_dai3    + don_t_DFInt_dsa3    + don_t_DFInt_dse3    + don_t_DFInt_nrj3    + don_t_DFInt_dsn3    ,
+         don_t_DFInt_d7       =  don_t_DFInt_dai7    + don_t_DFInt_dsa7    + don_t_DFInt_dse7    + don_t_DFInt_nrj7    + don_t_DFInt_dsn7    ; 
+		 
+	  //Demande finale (avec et hors stocks)
+	  DO don_td_DFHS_dai3  = don_td_DFIntHS_dai3 + don_td_p6_dai3 , // DAI
+         don_td_DFHS_dai7  = don_td_DFIntHS_dai7 + don_td_p6_dai7 ,
+		 don_t_DFHS_dai3   = don_t_DFIntHS_dai3  + don_t_p6_dai3  ,
+         don_t_DFHS_dai7   = don_t_DFIntHS_dai7  + don_t_p6_dai7  ,
+		 don_td_DF_dai3    = don_td_DFHS_dai3 + don_td_p54_dai3  ,
+         don_td_DF_dai7    = don_td_DFHS_dai7 + don_td_p54_dai7  ,
+		 don_t_DF_dai3     = don_t_DFHS_dai3  + don_t_p54_dai3   ,
+         don_t_DF_dai7     = don_t_DFHS_dai7  + don_t_p54_dai7   ;
+	  DO don_td_DFHS_dsa3  = don_td_DFIntHS_dsa3 + don_td_p6_dsa3 , // DSA
+         don_td_DFHS_dsa7  = don_td_DFIntHS_dsa7 + don_td_p6_dsa7 ,
+		 don_t_DFHS_dsa3   = don_t_DFIntHS_dsa3  + don_t_p6_dsa3  ,
+         don_t_DFHS_dsa7   = don_t_DFIntHS_dsa7  + don_t_p6_dsa7  ,
+		 don_td_DF_dsa3    = don_td_DFHS_dsa3 + don_td_p54_dsa3  ,
+         don_td_DF_dsa7    = don_td_DFHS_dsa7 + don_td_p54_dsa7  ,
+		 don_t_DF_dsa3     = don_t_DFHS_dsa3  + don_t_p54_dsa3   ,
+         don_t_DF_dsa7     = don_t_DFHS_dsa7  + don_t_p54_dsa7   ; 
+	  DO don_td_DFHS_dse3  = don_td_DFIntHS_dse3 + don_td_p6_dse3 , // DSE
+         don_td_DFHS_dse7  = don_td_DFIntHS_dse7 + don_td_p6_dse7 ,
+		 don_t_DFHS_dse3   = don_t_DFIntHS_dse3  + don_t_p6_dse3  ,
+         don_t_DFHS_dse7   = don_t_DFIntHS_dse7  + don_t_p6_dse7  ,
+		 don_td_DF_dse3    = don_td_DFHS_dse3 + don_td_p54_dse3  ,
+         don_td_DF_dse7    = don_td_DFHS_dse7 + don_td_p54_dse7  ,
+		 don_t_DF_dse3     = don_t_DFHS_dse3  + don_t_p54_dse3   ,
+         don_t_DF_dse7     = don_t_DFHS_dse7  + don_t_p54_dse7   ; 
+	  DO don_td_DFHS_nrj3  = don_td_DFIntHS_nrj3 + don_td_p6_nrj3 , // NRJ
+         don_td_DFHS_nrj7  = don_td_DFIntHS_nrj7 + don_td_p6_nrj7 ,
+		 don_t_DFHS_nrj3   = don_t_DFIntHS_nrj3  + don_t_p6_nrj3  ,
+         don_t_DFHS_nrj7   = don_t_DFIntHS_nrj7  + don_t_p6_nrj7  ,
+		 don_td_DF_nrj3    = don_td_DFHS_nrj3 + don_td_p54_nrj3  ,
+         don_td_DF_nrj7    = don_td_DFHS_nrj7 + don_td_p54_nrj7  ,
+		 don_t_DF_nrj3     = don_t_DFHS_nrj3  + don_t_p54_nrj3   ,
+         don_t_DF_nrj7     = don_t_DFHS_nrj7  + don_t_p54_nrj7   ; 
+	  DO don_td_DFHS_dsn3  = don_td_DFIntHS_dsn3 + don_td_p6_dsn3 , // DSN
+         don_td_DFHS_dsn7  = don_td_DFIntHS_dsn7 + don_td_p6_dsn7 ,
+		 don_t_DFHS_dsn3   = don_t_DFIntHS_dsn3  + don_t_p6_dsn3  ,
+         don_t_DFHS_dsn7   = don_t_DFIntHS_dsn7  + don_t_p6_dsn7  ,
+		 don_td_DF_dsn3    = don_td_DFHS_dsn3                     , 
+         don_td_DF_dsn7    = don_td_DFHS_dsn7                     ,
+		 don_t_DF_dsn3     = don_t_DFHS_dsn3                      ,
+         don_t_DF_dsn7     = don_t_DFHS_dsn7                      ; 
+		 
+	  DO don_td_DFHS_d3    =  don_td_DFHS_dai3 + don_td_DFHS_dsa3 + don_td_DFHS_dse3 + don_td_DFHS_nrj3 + don_td_DFHS_dsn3 , // D
+         don_td_DFHS_d7    =  don_td_DFHS_dai7 + don_td_DFHS_dsa7 + don_td_DFHS_dse7 + don_td_DFHS_nrj7 + don_td_DFHS_dsn7 ,
+		 don_t_DFHS_d3     =  don_t_DFHS_dai3  + don_t_DFHS_dsa3  + don_t_DFHS_dse3  + don_t_DFHS_nrj3  + don_t_DFHS_dsn3  ,
+         don_t_DFHS_d7     =  don_t_DFHS_dai7  + don_t_DFHS_dsa7  + don_t_DFHS_dse7  + don_t_DFHS_nrj7  + don_t_DFHS_dsn7  ,
+		 don_td_DF_d3      =  don_td_DF_dai3   + don_td_DF_dsa3   + don_td_DF_dse3   + don_td_DF_nrj3   + don_td_DF_dsn3   ,
+         don_td_DF_d7      =  don_td_DF_dai7   + don_td_DF_dsa7   + don_td_DF_dse7   + don_td_DF_nrj7   + don_td_DF_dsn7   ,
+		 don_t_DF_d3       =  don_t_DF_dai3    + don_t_DF_dsa3    + don_t_DF_dse3    + don_t_DF_nrj3    + don_t_DF_dsn3    ,
+         don_t_DF_d7       =  don_t_DF_dai7    + don_t_DF_dsa7    + don_t_DF_dse7    + don_t_DF_nrj7    + don_t_DF_dsn7    ; 
+
+	  //Demande totale (avec et hors stocks)
+	  DO don_td_DTotHS_dai3  = don_td_DFHS_dai3 + don_td_p2_dai3 , // DAI
+         don_td_DTotHS_dai7  = don_td_DFHS_dai7 + don_td_p2_dai7 ,
+		 don_t_DTotHS_dai3   = don_t_DFHS_dai3  + don_t_p2_dai3  ,
+         don_t_DTotHS_dai7   = don_t_DFHS_dai7  + don_t_p2_dai7  ,
+		 don_td_DTot_dai3    = don_td_DTotHS_dai3 + don_td_p54_dai3  ,
+         don_td_DTot_dai7    = don_td_DTotHS_dai7 + don_td_p54_dai7  ,
+		 don_t_DTot_dai3     = don_t_DTotHS_dai3  + don_t_p54_dai3   ,
+         don_t_DTot_dai7     = don_t_DTotHS_dai7  + don_t_p54_dai7   ;
+	  DO don_td_DTotHS_dsa3  = don_td_DFHS_dsa3 + don_td_p2_dsa3 , // DSA
+         don_td_DTotHS_dsa7  = don_td_DFHS_dsa7 + don_td_p2_dsa7 ,
+		 don_t_DTotHS_dsa3   = don_t_DFHS_dsa3  + don_t_p2_dsa3  ,
+         don_t_DTotHS_dsa7   = don_t_DFHS_dsa7  + don_t_p2_dsa7  ,
+		 don_td_DTot_dsa3    = don_td_DTotHS_dsa3 + don_td_p54_dsa3  ,
+         don_td_DTot_dsa7    = don_td_DTotHS_dsa7 + don_td_p54_dsa7  ,
+		 don_t_DTot_dsa3     = don_t_DTotHS_dsa3  + don_t_p54_dsa3   ,
+         don_t_DTot_dsa7     = don_t_DTotHS_dsa7  + don_t_p54_dsa7   ; 
+	  DO don_td_DTotHS_dse3  = don_td_DFHS_dse3 + don_td_p2_dse3 , // DSE
+         don_td_DTotHS_dse7  = don_td_DFHS_dse7 + don_td_p2_dse7 ,
+		 don_t_DTotHS_dse3   = don_t_DFHS_dse3  + don_t_p2_dse3  ,
+         don_t_DTotHS_dse7   = don_t_DFHS_dse7  + don_t_p2_dse7  ,
+		 don_td_DTot_dse3    = don_td_DTotHS_dse3 + don_td_p54_dse3  ,
+         don_td_DTot_dse7    = don_td_DTotHS_dse7 + don_td_p54_dse7  ,
+		 don_t_DTot_dse3     = don_t_DTotHS_dse3  + don_t_p54_dse3   ,
+         don_t_DTot_dse7     = don_t_DTotHS_dse7  + don_t_p54_dse7   ; 
+	  DO don_td_DTotHS_nrj3  = don_td_DFHS_nrj3 + don_td_p2_nrj3 , // NRJ
+         don_td_DTotHS_nrj7  = don_td_DFHS_nrj7 + don_td_p2_nrj7 ,
+		 don_t_DTotHS_nrj3   = don_t_DFHS_nrj3  + don_t_p2_nrj3  ,
+         don_t_DTotHS_nrj7   = don_t_DFHS_nrj7  + don_t_p2_nrj7  ,
+		 don_td_DTot_nrj3    = don_td_DTotHS_nrj3 + don_td_p54_nrj3  ,
+         don_td_DTot_nrj7    = don_td_DTotHS_nrj7 + don_td_p54_nrj7  ,
+		 don_t_DTot_nrj3     = don_t_DTotHS_nrj3  + don_t_p54_nrj3   ,
+         don_t_DTot_nrj7     = don_t_DTotHS_nrj7  + don_t_p54_nrj7   ; 
+	  DO don_td_DTotHS_dsn3  = don_td_DFHS_dsn3 + don_td_p2_dsn3 , // DSN
+         don_td_DTotHS_dsn7  = don_td_DFHS_dsn7 + don_td_p2_dsn7 ,
+		 don_t_DTotHS_dsn3   = don_t_DFHS_dsn3  + don_t_p2_dsn3  ,
+         don_t_DTotHS_dsn7   = don_t_DFHS_dsn7  + don_t_p2_dsn7  ,
+		 don_td_DTot_dsn3    = don_td_DTotHS_dsn3                , 
+         don_td_DTot_dsn7    = don_td_DTotHS_dsn7                ,
+		 don_t_DTot_dsn3     = don_t_DTotHS_dsn3                 ,
+         don_t_DTot_dsn7     = don_t_DTotHS_dsn7                 ; 
+		 
+	  DO don_td_DTotHS_d3    =  don_td_DTotHS_dai3 + don_td_DTotHS_dsa3 + don_td_DTotHS_dse3 + don_td_DTotHS_nrj3 + don_td_DTotHS_dsn3 , // D
+         don_td_DTotHS_d7    =  don_td_DTotHS_dai7 + don_td_DTotHS_dsa7 + don_td_DTotHS_dse7 + don_td_DTotHS_nrj7 + don_td_DTotHS_dsn7 ,
+		 don_t_DTotHS_d3     =  don_t_DTotHS_dai3  + don_t_DTotHS_dsa3  + don_t_DTotHS_dse3  + don_t_DTotHS_nrj3  + don_t_DTotHS_dsn3  ,
+         don_t_DTotHS_d7     =  don_t_DTotHS_dai7  + don_t_DTotHS_dsa7  + don_t_DTotHS_dse7  + don_t_DTotHS_nrj7  + don_t_DTotHS_dsn7  ,
+		 don_td_DTot_d3      =  don_td_DTot_dai3   + don_td_DTot_dsa3   + don_td_DTot_dse3   + don_td_DTot_nrj3   + don_td_DTot_dsn3   ,
+         don_td_DTot_d7      =  don_td_DTot_dai7   + don_td_DTot_dsa7   + don_td_DTot_dse7   + don_td_DTot_nrj7   + don_td_DTot_dsn7   ,
+		 don_t_DTot_d3       =  don_t_DTot_dai3    + don_t_DTot_dsa3    + don_t_DTot_dse3    + don_t_DTot_nrj3    + don_t_DTot_dsn3    ,
+         don_t_DTot_d7       =  don_t_DTot_dai7    + don_t_DTot_dsa7    + don_t_DTot_dse7    + don_t_DTot_nrj7    + don_t_DTot_dsn7    ; 
+      
+      //Demande intérieure (avec et hors stocks)      
+      DO don_td_dint_dai3 = don_td_p2_dai3 + don_td_p3_dai3 + don_td_p51_dai3 + don_td_p54_dai3 , // DAI 
+         don_td_dint_dai7 = don_td_p2_dai7 + don_td_p3_dai7 + don_td_p51_dai7 + don_td_p54_dai7 ,
+         don_t_dint_dai3  = don_t_p2_dai3  + don_t_p3_dai3  + don_t_p51_dai3  + don_t_p54_dai3  ,
+         don_t_dint_dai7  = don_t_p2_dai7  + don_t_p3_dai7  + don_t_p51_dai7  + don_t_p54_dai7  ,
+         don_td_dint_dse3 = don_td_p2_dse3 + don_td_p3_dse3 + don_td_p51_dse3 + don_td_p54_dse3 , // DSE 
+         don_td_dint_dse7 = don_td_p2_dse7 + don_td_p3_dse7 + don_td_p51_dse7 + don_td_p54_dse7 ,
+         don_t_dint_dse3  = don_t_p2_dse3  + don_t_p3_dse3  + don_t_p51_dse3  + don_t_p54_dse3  ,
+         don_t_dint_dse7  = don_t_p2_dse7  + don_t_p3_dse7  + don_t_p51_dse7  + don_t_p54_dse7  ,
+         don_td_dint_dsa3 = don_td_p2_dsa3 + don_td_p3_dsa3 + don_td_p51_dsa3 + don_td_p54_dsa3 , // DSA
+         don_td_dint_dsa7 = don_td_p2_dsa7 + don_td_p3_dsa7 + don_td_p51_dsa7 + don_td_p54_dsa7 ,
+         don_t_dint_dsa3  = don_t_p2_dsa3  + don_t_p3_dsa3  + don_t_p51_dsa3  + don_t_p54_dsa3  ,
+         don_t_dint_dsa7  = don_t_p2_dsa7  + don_t_p3_dsa7  + don_t_p51_dsa7  + don_t_p54_dsa7  ,
+         don_td_dint_nrj3 = don_td_p2_nrj3 + don_td_p3_nrj3 + don_td_p51_nrj3 + don_td_p54_nrj3 , // NRJ
+         don_td_dint_nrj7 = don_td_p2_nrj7 + don_td_p3_nrj7 + don_td_p51_nrj7 + don_td_p54_nrj7 ,
+         don_t_dint_nrj3  = don_t_p2_nrj3  + don_t_p3_nrj3  + don_t_p51_nrj3  + don_t_p54_nrj3  ,
+         don_t_dint_nrj7  = don_t_p2_nrj7  + don_t_p3_nrj7  + don_t_p51_nrj7  + don_t_p54_nrj7  ,
+         don_td_dint_dsn3 = don_td_p2_dsn3 + don_td_p3_dsn3 + don_td_p51_dsn3                    , // DSN
+         don_td_dint_dsn7 = don_td_p2_dsn7 + don_td_p3_dsn7 + don_td_p51_dsn7                    , 
+         don_t_dint_dsn3  = don_t_p2_dsn3  + don_t_p3_dsn3  + don_t_p51_dsn3                     ,
+         don_t_dint_dsn7  = don_t_p2_dsn7  + don_t_p3_dsn7  + don_t_p51_dsn7                     ,
+      	 don_td_dint_d3   = don_td_p2_d3   + don_td_p3_d3   + don_td_p51_d3   + don_td_p54_d3   , // D
+         don_td_dint_d7   = don_td_p2_d7   + don_td_p3_d7   + don_td_p51_d7   + don_td_p54_d7   ,
+         don_t_dint_d3    = don_t_p2_d3    + don_t_p3_d3    + don_t_p51_d3    + don_t_p54_d3    ,
+         don_t_dint_d7    = don_t_p2_d7    + don_t_p3_d7    + don_t_p51_d7    + don_t_p54_d7    ;        
+          
+      DO don_td_dinths_d3   = don_td_dint_d3 - don_td_p54_d3                   , // D 
+         don_td_dinths_d7   = don_td_dint_d7 - don_td_p54_d7                   ,
+         don_t_dinths_d3    = don_t_dint_d3  - don_t_p54_d3                    ,
+         don_t_dinths_d7    = don_t_dint_d7  - don_t_p54_d7                    ,
+         don_td_dinths_dai3 = don_td_p2_dai3 + don_td_p3_dai3 + don_td_p51_dai3 , // DAI 
+         don_td_dinths_dai7 = don_td_p2_dai7 + don_td_p3_dai7 + don_td_p51_dai7 ,
+         don_t_dinths_dai3  = don_t_p2_dai3  + don_t_p3_dai3  + don_t_p51_dai3  ,
+         don_t_dinths_dai7  = don_t_p2_dai7  + don_t_p3_dai7  + don_t_p51_dai7  ,
+         don_td_dinths_dse3 = don_td_p2_dse3 + don_td_p3_dse3 + don_td_p51_dse3 , // DSE 
+         don_td_dinths_dse7 = don_td_p2_dse7 + don_td_p3_dse7 + don_td_p51_dse7 ,
+         don_t_dinths_dse3  = don_t_p2_dse3  + don_t_p3_dse3  + don_t_p51_dse3  ,
+         don_t_dinths_dse7  = don_t_p2_dse7  + don_t_p3_dse7  + don_t_p51_dse7  ,
+         don_td_dinths_dsa3 = don_td_p2_dsa3 + don_td_p3_dsa3 + don_td_p51_dsa3 , // DSA
+         don_td_dinths_dsa7 = don_td_p2_dsa7 + don_td_p3_dsa7 + don_td_p51_dsa7 ,
+         don_t_dinths_dsa3  = don_t_p2_dsa3  + don_t_p3_dsa3  + don_t_p51_dsa3  ,
+         don_t_dinths_dsa7  = don_t_p2_dsa7  + don_t_p3_dsa7  + don_t_p51_dsa7  ,
+         don_td_dinths_nrj3 = don_td_p2_nrj3 + don_td_p3_nrj3 + don_td_p51_nrj3 , // NRJ
+         don_td_dinths_nrj7 = don_td_p2_nrj7 + don_td_p3_nrj7 + don_td_p51_nrj7 ,
+         don_t_dinths_nrj3  = don_t_p2_nrj3  + don_t_p3_nrj3  + don_t_p51_nrj3  ,
+         don_t_dinths_nrj7  = don_t_p2_nrj7  + don_t_p3_nrj7  + don_t_p51_nrj7  ,
+         don_td_dinths_dsn3 = don_td_p2_dsn3 + don_td_p3_dsn3 + don_td_p51_dsn3 , // DSN
+         don_td_dinths_dsn7 = don_td_p2_dsn7 + don_td_p3_dsn7 + don_td_p51_dsn7 ,
+         don_t_dinths_dsn3  = don_t_p2_dsn3  + don_t_p3_dsn3  + don_t_p51_dsn3  ,
+         don_t_dinths_dsn7  = don_t_p2_dsn7  + don_t_p3_dsn7  + don_t_p51_dsn7  ;
+
+      //PIB hors stocks
+      DO don_td_pibhs3    = don_td_pib3    - don_td_p54_d3               ,
+         don_td_pibhs7    = don_td_pib7    - don_td_p54_d7               , 
+         don_t_pibhs3     = don_t_pib3     - don_t_p54_d3                ,  
+         don_t_pibhs7     = don_t_pib7     - don_t_p54_d7                ; 
+    
+    // pour construire le prix de production DSA hors marges commerciales
+     DO don_td_p1hm_dsa3 = td_p1_dsa3 + td_memp_dsa3 ,
+	    don_td_p1hm_dsa7 = td_p1_dsa7 + td_memp_dsa7 ,
+		don_t_p1hm_dsa3  = t_p1_dsa3  + t_memp_dsa3  ,
+		don_t_p1hm_dsa7  = t_p1_dsa7  + t_memp_dsa7  ;             
+		
+	// construction des transferts pour le passage branche-produit de la production
+	DO don_TD_TR_DAI3 = TD_P1_DAI3 - TD_P1E_DAI3,
+	   don_TD_TR_DAI7 = TD_P1_DAI7 - TD_P1E_DAI7,
+	   don_TD_TR_DSA3 = TD_P1_DSA3 - TD_P1E_DSA3,
+	   don_TD_TR_DSA7 = TD_P1_DSA7 - TD_P1E_DSA7,
+	   don_TD_TR_DSE3 = TD_P1_DSE3 - TD_P1E_DSE3,
+	   don_TD_TR_DSE7 = TD_P1_DSE7 - TD_P1E_DSE7,
+	   don_TD_TR_NRJ3 = TD_P1_NRJ3 - TD_P1E_NRJ3,
+	   don_TD_TR_NRJ7 = TD_P1_NRJ7 - TD_P1E_NRJ7,
+	   don_TD_TR_DSN3 = TD_P1_DSN3 - TD_P1E_DSN3,
+	   don_TD_TR_DSN7 = TD_P1_DSN7 - TD_P1E_DSN7;
+	   
+
+	   
+
+		 
+
+
+
+
+	   
+   // ***********************************************************************************************************************
+   // *****  Construction des séries utiles à partir des séries agrégées : prix A-1, volume chaîné, prix chaîné         *****
+   // ***********************************************************************************************************************
+      DO out1=C.("p3m_smna","p3g_smna","p3p_smna",
+                 "p54_d","p6_smna","p1e_smna","p2e_smna","b1_smna","b1_az","b1_sm",
+                 "pib","pibhs","p1hm_dsa","p1_dhnrj"
+                 );
+      DO o1  = C.("p1","p7","d231","d211","p2","p3","p3m","p4m","p41","p6",
+                  "p1e","p2e","b1","p1mi","rim",
+                  "rnt","rntpp","DFInt", "DFIntHS", "DInt", "DIntHS", "DF", "DFHS", "DTot", "DTotHS");
+      DO out2a=C.(o1||"_d",o1||"_dai",o1||"_nrj",o1||"_dse",o1||"_dsa",o1||"_dsn");
+      DO out2b=C.("p1_sm",
+      			  		"p1_ycmg_dai","p1_ycmg_nrj","p1_ycmg_dse","p1_ycmg_dsa",
+      			  "p3m_pchtr","p3m_sm",
+                  "p3g_d", "p3g_dai",            "p3g_dse",  "p3g_dsa","p3g_dsn","p3g_sm",
+                  "p31g_d","p31g_dai",           "p31g_dse","p31g_dsa","p31g_dsn",
+                  "p32g_d",                     "p32g_dse","p32g_dsa","p32g_dsn",
+                  "p3p_d",                                  "p3p_dsa", "p3p_dsn",
+                  "p51_d" ,"p51_dai" ,           "p51_dse" ,"p51_dsa" ,
+                  "p51s_d","p51s_dai",           "p51s_dse","p51s_dsa",
+                  "p51m_d",                      "p51m_dse","p51m_dsa",
+                  "p51b_d","p51b_dai",           "p51b_dse","p51b_dsa",
+                  "p51g_d","p51g_dai",           "p51g_dse","p51g_dsa",
+                  "p51p_d","p51p_dai",           "p51p_dse","p51p_dsa",
+                  "p54_d","p54_dai","p54_nrj","p54_dse","p54_dsa",
+                  "p6_pchtr","p7_pchtr","p6_sm",
+                           "memp_dai","memp_nrj","memp_dse","memp_dsa",
+                           "temp_dai","temp_nrj","temp_dse",
+                  "d212_d","d212_dai","d212_nrj","d212_dse",
+                  "d214_d","d214_dai","d214_nrj","d214_dse","d214_dsa",
+                  "d319_d","d319_dai","d319_nrj","d319_dse","d319_dsa",
+                                                 "p73_dse",                      "p73_pcafab"                
+                 
+                  ); 
+      
+      DO out=COMBINE(out1,out2a,out2b);
+      DO PRT.(out);
+      
+      // en CVS-CJO
+         DO o_cvscjo0    = "td_"||OUT||"0";       // liste prix A-1
+         DO o_cvscjo9_ch = "td_"||OUT||"9_ch";    // liste prix chaînés
+         DO o_cvscjo7    = "td_"||OUT||"7";       // liste volume au prix A-1
+         DO o_cvscjo7_ch = "td_"||OUT||"7_ch";    // liste volume chaîné
+         DO o_cvscjo3    = "td_"||OUT||"3";       // liste valeur
+
+      // en brut
+         DO o_brut0     = "t_"||OUT||"0";        // liste prix A-1
+         DO o_brut7     = "t_"||OUT||"7";        // liste volume au prix A-1
+         DO o_brut7_ch  = "t_"||OUT||"7_ch";     // liste volume chaîné
+         DO o_brut3     = "t_"||OUT||"3";        // liste valeur
+         
+      // le coefficient correctif associé
+         DO liste_coef = "corr_"||OUT;
+
+         &execmd "do don_@(o_brut0)      = pxbasevolvo'f(don_@(o_brut7),don_@(o_brut3))"     ";" ;
+         &execmd "do don_@(o_cvscjo7_ch) = don_@(o_cvscjo7)/don_@(o_brut0)"                  ";" ;
+         &execmd "do don_@(o_cvscjo9_ch) = 100*don_@(o_cvscjo3)/don_@(o_cvscjo7_ch)"         ";" ;
+         &execmd "do don_@(o_cvscjo0)    = pxbasevolch'f(don_@(o_cvscjo7_ch),don_@(o_cvscjo3))"     ";" ;
+         &execmd "do don_@(liste_coef)   = don_@(o_cvscjo0)/don_@(o_brut0)" ";" ;
+         // cas particuliers
+         DO don_corr_d319_dsn=1*(td_pib3/td_pib3);
+         
+         //Approximation des stocks en prix chaînés
+         DO don_dS_PIB = LOG(don_td_pib7_ch/don_td_pibhs7_ch);
+         
+         
+
+// construction de constantes : 
+
+
+ 
+  do don_part_p7dai_2014q4 = VALUES(td_p7_dai7_ch/(td_p7_dai7_ch+td_p1_dai7_ch),2014Q4); 
+  do don_part_p7dse_2014q4 = VALUES(td_p7_dse7_ch/(td_p7_dse7_ch+td_p1_dse7_ch),2014Q4); 
+  do don_part_p7dsa_2014q4 = VALUES(td_p7_dsa7_ch/(td_p7_dsa7_ch+td_p1_dsa7_ch),2014Q4); 
+  do don_part_p7nrj_2014q4 = VALUES(td_p7_nrj7_ch/(td_p7_nrj7_ch+td_p1_nrj7_ch),2014Q4); 
+  do don_part_p7dsn_2014q4 = VALUES(td_p7_dsn7_ch/(td_p7_dsn7_ch+td_p1_dsn7_ch),2014Q4); 
+
+
+	 
+         
+         
+
+DELACCESS all; DELSAVE; DRANGE;
+// ************************************
+// ***** FIN de Mes1a              ****
+// ************************************

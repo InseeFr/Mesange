@@ -1,0 +1,240 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ******************************************************/
+// ***** Construction du compte central             *****/
+// ******************************************************/
+
+// Input  : -fichier final don3.frm
+//          -modèle Mesange
+// Ouputs : -fichier projCC.frm
+
+   // Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE all; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+      ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+      
+   // Importation de la base de données enrichie
+      ACCESS bdd id .\BDD\don3b2L.frm   type formdata mode r; SEARCH bdd;
+      ACCESS prj id .\BDD\projCC2Lb.frm type formdata mode c; SEARCH prj;
+      DO DFDELETE("prj",">");
+      DO DFCOPY'F ("bdd","prj");
+      DELSEARCH bdd; DELACCESS bdd;
+      
+// **************************************************************************************************************************
+// *****   Prolongement des variables exogènes
+// **************************************************************************************************************************
+     usemod mesange2L ;
+	&lklimit;
+   
+
+      
+   // construction d'une variable égale à 1 + del(eff) pour la projection des variables exogènes en volume :
+      do prj_delta_eff = 1+values(del(eff2),2014q4) ; 
+      do prt.(delta_eff) ; 
+    
+   // 0- les coefficients correctifs, uniquement à partir de 2015T1
+      DO l_corr=DFLIST("prj","corr_>");
+      &execmd "do prj_@(l_corr) = extrapsd'f(prj_@(l_corr),0,1,2015q1,2200q4)" ";";
+    
+   // 1- Cales et coefficients techniques : prolongement constant à la dernière valeur 2015T1
+
+
+      DO l_ct_et_cale=C.(DFLIST("prj","ct_>"),DFLIST("prj",">_cale"));
+      &execmd "do prj_@(l_ct_et_cale) = extrapsd'f(prj_@(l_ct_et_cale),1,0,2015q1,2200q4)" ";";
+  	  	    
+   // 2a- cas particuliers : les prolongements à partir de 2015T1 à 0
+      DO l_2015_0=C.("MN_CNA","temperature","td_d319_dsn3","td_d319_dsn7");
+      &execmd "do prj_@(l_2015_0) = extrapsd'f(prj_@(l_2015_0),0,0,2015q1,2200q4)" ";";
+
+   // 2b- cas particuliers : les prolongements à partir de 2015T1 à la dernière valeur
+	   DO l_2015_last=C.("oat10ar","eur3mr","pouce","tce","tce_sm","txd291",
+                        "tc_emps_az1",   
+                        "tdec","tdec_dai","tdec_dse","tdec_dsa","tdec3","fisc","fisc1",
+                        "cf","cs","cfs","tir_smooth",
+                        "pdm_em",  
+                        "pdm_vol",
+                        "prime",
+                        "pximmo",
+                        "pximmo_rel", 
+                        "popact",
+                        "temps80",
+                        "temps80A",
+                        "temps80Alisse",
+                        "temps95t1",
+                        "temps10",
+                        "temps09",
+                        "tempsw1",
+                        "trend_pib_par_tete",
+                        "struct_prod",
+                        "tce_q","tce_nq",
+                        "tcs_nq", "tcs_q", "tcsdsn", "tcsrdm", "tcsnonsal"
+                        ,"tcsg_trav", "tcsg_cap", "tcrds_trav", "tcrds_cap", 
+                        "ouv",
+                        "smic_cp1",
+                        "smic_cvs_cp",
+                        "productivite",
+                        "usa_tc",
+                        "tx_temp_dse","prodk", 
+                        "sup09q1","temps76","temps91","temps97","temps89","sup01","tc_emps_dsn7","d85q190q1" ); 
+                        
+      &execmd "do prj_@(l_2015_last) = extrapsd'f(prj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+   									
+      // 2c- cas particuliers : prolongements de variables supplémentaires
+   
+   	  DO l_2015_last2=C.("bal", "balpos", "d_p51mdsa", "d_p51mdse", "fil", "jup", "juppos","T93Q1","T99Q1"); 
+      &execmd "do prj_@(l_2015_last2) = extrapsd'f(prj_@(l_2015_last2),1,0,2015q1,2200q4)" ";";
+   
+      DO trim = RESHAPE(SEQ(1000)-4*TRUNCATE((SEQ(1000)-1)/4),1980Q1);
+   
+      DO eff2 = extrapsd'f(eff2,1,(delta_eff-1),2015q1,2200q4);
+      DO eff2_proj = extrapsd'f(eff2_proj,1,(delta_eff-1),2015q1,2200q4);
+   
+   
+   // 3- prolongement de variables exogènes volume / valeur / prix
+      DO l_prix = C.("petx","petm","petxc","petmc","baril_us","num_comp_cout","td_d214_nrj9_ch", "smiccvs","smic_cvs"); 
+	  &execmd "do prj_@(l_prix)= extrapsd'f(prj_@(l_prix),(1+0.02)**(1/4),0,2015q1,2200q4)" ";";
+        
+      DO l_vol=C.("demmon","td_p3g_dai7_ch","td_p3g_dse7_ch","td_p3g_dsa7_ch","td_p51g_dai7_ch","td_p51g_dse7_ch","td_p51g_dsa7_ch");
+      &execmd "do prj_@(l_vol) = extrapsd'f(prj_@(l_vol),exp(delta_eff-1),0,2015q1,2200q4)" ";";
+             
+      DO l_val=C.("tc_d1_az3","td_b2_s133","td_p131_s13r3","tc_d632_s13e3", "tc_d41_s13s3","td_p52_s13e3","tc_np1_s13e3"); 
+   	  &execmd "do prj_@(l_val) = extrapsd'f(prj_@(l_val),exp(delta_eff-1)*(1+0.02)**(1/4),0,2015q1,2200q4)" ";";
+
+      
+      &lklimit ;
+      
+    
+      SIMULATE ;
+       SIMSTART 1992Q1 from 1980q1;
+      CONOPT concr 0.000000001 stop 20000;  
+      DOTIL 2200q4;
+      SAVESIM prj; 
+
+
+
+/*********************************** Croissance des prix de production de 2% **********************************/
+  DELACCESS all; DELSAVE all; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+      ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+      
+   // Importation de la base de données enrichie
+      ACCESS cc id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH cc;
+
+USEMOD mesange2L ;
+
+DOSAVE prix = C.("TD_P1_DAI9_CH","TD_P1_DSE9_CH","TD_P1_DSA9_CH","TD_P1_NRJ9_CH" );
+&execmd "do cc_@(prix) = extrapsd'f(cc_@(prix),(1+0.02)**(1/4),0,2015q1,2200q4)" ";";
+DOSAVE val=C.("tc_d62hcho_s13e3","tc_d62cho_s13e3"); 
+&execmd "do cc_@(val) = extrapsd'f(cc_@(val),exp(delta_eff-1)*(1+0.02)**(1/4),0,2015q1,2200q4)" ";";
+   	
+CHANGESYM exogenous 
+TD_P1_DAI9_CH 	TD_P1_DSE9_CH 	TD_P1_DSA9_CH 	TD_P1_NRJ9_CH 
+tc_d62hcho_s13e3 tc_d62cho_s13e3  ;
+
+CHANGESYM endogenous 
+P1_DAI9_ch_cale P1_Dse9_ch_cale P1_Dsa9_ch_cale P1_nrj9_ch_cale 
+d62cho_cale d62hcho_cale   ; 
+
+
+
+
+FILEMOD inv_cc ;
+USEMOD inv_cc  ;
+&lklimit;
+
+
+SIMULATE  ; SIMSTART 1992Q1 from 1980q1;
+CONOPT concr 0.000000001 stop 20000;  
+DOTIL 2200q4;
+SAVESIM temp;
+
+DOSAVE endo = MODSYM("endogenous");
+&execmd "do cc_@(endo) = overlay(temp_@(endo),cc_@(endo))" ";" ;
+
+DOSAVE exo= MODSYM("exogenous");
+&execmd "do cc_@(exo) = overlay(temp_@(exo),cc_@(exo))" ";" ;
+
+
+/***********************************Construction des sorties utiles**********************************/
+
+DO cc_sortiescc = C.(
+// volume
+"txcr_td_pib7_ch",
+"txcr_td_p3_d7_ch",  "txcr_td_p51_d7_ch",  "txcr_td_p6_d7_ch" ,"txcr_td_p7_d7_ch","txcr_td_b1_smna7_ch",
+"txcr_td_p3m_d7_ch", "txcr_td_p3m_dai7_ch", "txcr_td_p3m_dse7_ch", "txcr_td_p3m_dsa7_ch", "txcr_td_p3m_dsn7_ch",
+"txcr_td_p3g_d7_ch", "txcr_td_p3g_dai7_ch", "txcr_td_p3g_dse7_ch", "txcr_td_p3g_dsa7_ch", "txcr_td_p3g_dsn7_ch",
+																    "txcr_td_p3p_dsa7_ch", "txcr_td_p3p_dsn7_ch",
+"txcr_td_p51s_dai7_ch", "txcr_td_p51s_dse7_ch", "txcr_td_p51s_dsa7_ch", "txcr_td_p51s_d7_ch",     
+						"txcr_td_p51M_dse7_ch", "txcr_td_p51M_dsa7_ch", 
+"txcr_td_p51b_dai7_ch", "txcr_td_p51b_dse7_ch", "txcr_td_p51b_dsa7_ch",
+"txcr_td_p51p_dai7_ch", "txcr_td_p51p_dse7_ch", "txcr_td_p51p_dsa7_ch", 
+"txcr_td_p51g_dai7_ch", "txcr_td_p51g_dse7_ch", "txcr_td_p51g_dsa7_ch", 
+"txcr_td_p6_d7_ch" , "txcr_td_p6_dai7_ch" ,"txcr_td_p6_dse7_ch" ,"txcr_td_p6_dsa7_ch" ,"txcr_td_p6_nrj7_ch" ,"txcr_td_p6_dsn7_ch" ,
+"txcr_td_p7_d7_ch" , "txcr_td_p7_dai7_ch" ,"txcr_td_p7_dse7_ch" ,"txcr_td_p7_dsa7_ch" ,"txcr_td_p7_nrj7_ch" ,"txcr_td_p7_dsn7_ch" ,
+
+
+// valeur
+
+"txcr_td_pib3" , 	"txcr_td_p3_d3"    ,  "txcr_td_p51_d3"   ,"txcr_td_p6_d3"   ,"txcr_td_p7_d3",
+
+// prix
+"txcr_td_pib9_ch" ,  "txcr_td_p1_d9_ch" ,  "txcr_td_p3_d9_ch" , "txcr_td_p51_d9_ch" , "txcr_td_p6_d9_ch" , "txcr_td_p7_d9_ch", "txcr_td_b1_smna9_ch",
+"txcr_td_p3m_d9_ch", "txcr_td_p3m_dai9_ch", "txcr_td_p3m_dse9_ch", "txcr_td_p3m_dsa9_ch", "txcr_td_p3m_dsn9_ch",
+"txcr_td_p2_d9_ch", "txcr_td_p2_dai9_ch", "txcr_td_p2_dse9_ch", "txcr_td_p2_dsa9_ch", "txcr_td_p2_dsn9_ch",
+
+"txcr_td_p3g_d9_ch", "txcr_td_p3g_dai9_ch", "txcr_td_p3g_dse9_ch", "txcr_td_p3g_dsa9_ch", "txcr_td_p3g_dsn9_ch",
+																    "txcr_td_p3p_dsa9_ch", "txcr_td_p3p_dsn9_ch",
+"txcr_td_p51s_dai9_ch", "txcr_td_p51s_dse9_ch", "txcr_td_p51s_dsa9_ch", "txcr_td_p51s_d9_ch",     
+						"txcr_td_p51M_dse9_ch", "txcr_td_p51M_dsa9_ch", 
+"txcr_td_p51G_dai9_ch", "txcr_td_p51g_dse9_ch", "txcr_td_p51g_dsa9_ch", 
+"txcr_td_p51b_dai9_ch", "txcr_td_p51b_dse9_ch", "txcr_td_p51b_dsa9_ch",
+"txcr_td_p51p_dai9_ch", "txcr_td_p51p_dse9_ch", "txcr_td_p51p_dsa9_ch", 
+"txcr_td_p6_d9_ch" , "txcr_td_p6_dai9_ch" ,"txcr_td_p6_dse9_ch" ,"txcr_td_p6_dsa9_ch" ,"txcr_td_p6_nrj9_ch" ,"txcr_td_p6_dsn9_ch" ,
+"txcr_td_p7_d9_ch" , "txcr_td_p7_dai9_ch" ,"txcr_td_p7_dse9_ch" ,"txcr_td_p7_dsa9_ch" ,"txcr_td_p7_nrj9_ch" ,"txcr_td_p7_dsn9_ch" ,
+
+"txcr_td_p1_dai9_ch","txcr_td_p1_dse9_ch","txcr_td_p1_dsa9_ch","txcr_td_p1_nrj9_ch","txcr_td_p1_dsn9_ch",
+"txcr_td_b1_dai9_ch","txcr_td_b1_dse9_ch","txcr_td_b1_dsa9_ch","txcr_td_b1_nrj9_ch","txcr_td_b1_dsn9_ch",
+"txcr_b1_smna9_ch",
+
+"txcr_smpt7","txcr_cw","txcr_tc_emps_smna7","txcr_ck",
+
+// sortie de variables en niveau
+"tcho","tc_emps_smna7"
+); 
+
+
+
+
+
+
+	
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous")) ; 
+&execmd "dosave txcr_@(varia) = @(varia)/@(varia)(-1)-1" ";" ;
+
+	
+
+
+
+do tx2pct = txcr_td_p1_dsa9_ch ; 
+DO txvol  = demmon/demmon(-1)-1 ;
+do txval  = txcr_td_b1_s133 ; 
+do zero = 0*td_pib3 ; 
+
+// volumes
+&plot vari txvol txcr_td_pib7_ch txcr_td_p2_d7_ch txcr_td_p3m_d7_ch txcr_td_p51s_d7_ch txcr_td_p51m_dsa7_ch txcr_td_p6_d7_ch txcr_td_p7_d7_ch , RANGE 2025q1::2200q1 ;
+
+
+// prix
+&plot vari tx2pct txcr_td_pib9_ch txcr_td_p2_d9_ch txcr_td_p3m_d9_ch txcr_td_p51s_d9_ch txcr_td_p51m_dsa9_ch txcr_td_p6_d9_ch txcr_td_p7_d9_ch , RANGE 2025q1::2200q1 ;
+
+
+
+// marché du travail
+&plot vari txval txcr_smpt_nq7 txcr_smpt_q7 , RANGE 2030q1::2200q4 ; 
+&plot vari zero txcr_tc_emps_nq7 txcr_tc_emps_q7 , range 2030q1::2200q4 ; 
+&plot vari tcho  , range 2030q1::2200q4; 
+
+ 
+ 	  /*****************************************************************************/
+	  /******************   Fin de Mes4                            *****************/
+	  /*****************************************************************************/

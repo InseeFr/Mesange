@@ -1,0 +1,44 @@
+﻿// Cette fonction prend en input :
+	// listN : un vecteur avec la liste des variables que l'on souhaite étudier (string)
+	// x : borne
+	// base1 et base2 : les deux préfixes des variables que l'on compare
+	
+// La fonction imprime un vecteur avec la liste des variables (parmi listN) pour lesquelles l'écart entre les deux "bases" est supérieur (en val abs) à x
+// Elle imprime également la matrice avec l'ensemble des variables et la valeur de l'écart
+	
+addfun main;
+
+procedure main(listN,x,base1,base2)	
+{
+	// Initialisation : création tableaux et autres variables
+	tabVar_pb = RESHAPE(C.("Variables qui posent pb"),1,1) ;
+	tabVar_pb_valeur = RESHAPE(C.("nom var","valeur"),1,2) ;
+	i=1 ;
+	k=1 ;
+	nbN = NVALS(listN) ; 
+
+	// Boucle : pour chaque variable... 
+		FOR (k=1;k<=nbN;k=k+1) {
+		// Construit un vecteur avec l'écart entre base1_VAR et base2_VAR puis calcule l'élément MAX de ce vecteur (en valeur absolue)
+		nom_var_base1 = base1||"_"||listN[k] ;
+		nom_var_base2 = base2||"_"||listN[k] ;
+		var_base1 = GETDATA(nom_var_base1) ;
+		var_base2 = GETDATA(nom_var_base2) ;
+		ecart = MAXS(ABSV(var_base1-var_base2)); 
+	
+		// Si l'écart entre deux variables est supérieur à x en valeur absolue, ajout du nom de la variable dans le vecteur des variables posant problème et ajout des stats dans la matrice
+		IF (ecart > x) {
+			ecart_string = "ecart = "||ecart ;
+	
+			tabVar_pb = ADDROW(tabVar_pb,i,listN[k]) ; // ajoute une ligne après la ième avec le nom de la variable
+		
+			vec_stats = C.(listN[k], ecart_string) ; 
+		
+			tabVar_pb_valeur = ADDROW(tabVar_pb_valeur,i,vec_stats) ; // ajoute une ligne (vec_stats) à la matrice après la ième ligne
+		
+			i = i+1 ;
+			}
+		}
+	PRT.(tabVar_pb);
+	disp2d'f(tabVar_pb_valeur) ;
+}

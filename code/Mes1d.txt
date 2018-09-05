@@ -1,0 +1,675 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ***********************************************************************************************************************
+// ***** Mes1d. Construction séries TVA et marges de transport                                                                                       *****
+// ***********************************************************************************************************************
+   // Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+
+      ACCESS don0 id .\BDD\don1c.frm    type formdata mode r; SEARCH don0;
+      ACCESS don  id .\BDD\don1d.frm    type formdata mode c; SEARCH don;
+      DO DFDELETE("don",">");
+      DO DFCOPY'F ("don0","don");
+      DELSEARCH don0; DELACCESS don0;
+
+		// inputs : don1c.frm ainsi que 3 fichiers wk1 avec les données des comptes trimestriels
+		// avec tva et marges par opération au niveau A17
+		
+		// output : don1d.frm
+
+
+
+// phase 1 : importation des données :
+&tbl2ts file "./Ctrim/tvamargestd.wk1"; 
+
+DO	td_VP2_A17AZ_3_HR	=	TD.VP2_A17AZ_3_HR	;
+DO	td_VP2_A17C1_3_HR	=	TD.VP2_A17C1_3_HR	;
+DO	td_VP2_A17C2_3_HR	=	TD.VP2_A17C2_3_HR	;
+DO	td_VP2_A17C3_3_HR	=	TD.VP2_A17C3_3_HR	;
+DO	td_VP2_A17C4_3_HR	=	TD.VP2_A17C4_3_HR	;
+DO	td_VP2_A17C5_3_HR	=	TD.VP2_A17C5_3_HR	;
+DO	td_VP2_A17DE_3_HR	=	TD.VP2_A17DE_3_HR	;
+DO	td_VP2_A17FZ_3_HR	=	TD.VP2_A17FZ_3_HR	;
+DO	td_VP2_A17GZ_3_HR	=	TD.VP2_A17GZ_3_HR	;
+DO	td_VP2_A17HZ_3_HR	=	TD.VP2_A17HZ_3_HR	;
+DO	td_VP2_A17IZ_3_HR	=	TD.VP2_A17IZ_3_HR	;
+DO	td_VP2_A17JZ_3_HR	=	TD.VP2_A17JZ_3_HR	;
+DO	td_VP2_A17KZ_3_HR	=	TD.VP2_A17KZ_3_HR	;
+DO	td_VP2_A17LZ_3_HR	=	TD.VP2_A17LZ_3_HR	;
+DO	td_VP2_A17MN_3_HR	=	TD.VP2_A17MN_3_HR	;
+DO	td_VP2_A17OQ_3_HR	=	TD.VP2_A17OQ_3_HR	;
+DO	td_VP2_A17RU_3_HR	=	TD.VP2_A17RU_3_HR	;
+DO	td_VP4M_A17AZ_3_HR	=	TD.VP4M_A17AZ_3_HR	;
+DO	td_VP4M_A17C1_3_HR	=	TD.VP4M_A17C1_3_HR	;
+DO	td_VP4M_A17C2_3_HR	=	TD.VP4M_A17C2_3_HR	;
+DO	td_VP4M_A17C3_3_HR	=	TD.VP4M_A17C3_3_HR	;
+DO	td_VP4M_A17C4_3_HR	=	TD.VP4M_A17C4_3_HR	;
+DO	td_VP4M_A17C5_3_HR	=	TD.VP4M_A17C5_3_HR	;
+DO	td_VP4M_A17DE_3_HR	=	TD.VP4M_A17DE_3_HR	;
+DO	td_VP4M_A17FZ_3_HR	=	TD.VP4M_A17FZ_3_HR	;
+DO	td_VP4M_A17GZ_3_HR	=	TD.VP4M_A17GZ_3_HR	;
+DO	td_VP4M_A17HZ_3_HR	=	TD.VP4M_A17HZ_3_HR	;
+DO	td_VP4M_A17IZ_3_HR	=	TD.VP4M_A17IZ_3_HR	;
+DO	td_VP4M_A17JZ_3_HR	=	TD.VP4M_A17JZ_3_HR	;
+DO	td_VP4M_A17KZ_3_HR	=	TD.VP4M_A17KZ_3_HR	;
+DO	td_VP4M_A17LZ_3_HR	=	TD.VP4M_A17LZ_3_HR	;
+DO	td_VP4M_A17MN_3_HR	=	TD.VP4M_A17MN_3_HR	;
+DO	td_VP4M_A17OQ_3_HR	=	TD.VP4M_A17OQ_3_HR	;
+DO	td_VP4M_A17RU_3_HR	=	TD.VP4M_A17RU_3_HR	;
+DO	td_VP51_A17C3_3_HR	=	TD.VP51_A17C3_3_HR	;
+DO	td_VP51_A17C4_3_HR	=	TD.VP51_A17C4_3_HR	;
+DO	td_VP51_A17C5_3_HR	=	TD.VP51_A17C5_3_HR	;
+DO	td_VP51_A17FZ_3_HR	=	TD.VP51_A17FZ_3_HR	;
+DO	td_VP51_A17JZ_3_HR	=	TD.VP51_A17JZ_3_HR	;
+DO	td_VP51_A17LZ_3_HR	=	TD.VP51_A17LZ_3_HR	;
+DO	td_VP51_A17MN_3_HR	=	TD.VP51_A17MN_3_HR	;
+DO	td_VP51_A17RU_3_HR	=	TD.VP51_A17RU_3_HR	;
+DO	td_MP2_A17AZ_3_HR	=	TD.MP2_A17AZ_3_HR	;
+DO	td_MP2_A17C1_3_HR	=	TD.MP2_A17C1_3_HR	;
+DO	td_MP2_A17C2_3_HR	=	TD.MP2_A17C2_3_HR	;
+DO	td_MP2_A17C3_3_HR	=	TD.MP2_A17C3_3_HR	;
+DO	td_MP2_A17C4_3_HR	=	TD.MP2_A17C4_3_HR	;
+DO	td_MP2_A17C5_3_HR	=	TD.MP2_A17C5_3_HR	;
+DO	td_MP2_A17DE_3_HR	=	TD.MP2_A17DE_3_HR	;
+DO	td_MP2_A17GZ_3_HR	=	TD.MP2_A17GZ_3_HR	;
+DO	td_MP2_A17JZ_3_HR	=	TD.MP2_A17JZ_3_HR	;
+DO	td_MP3M_A17AZ_3_HR	=	TD.MP3M_A17AZ_3_HR	;
+DO	td_MP3M_A17C1_3_HR	=	TD.MP3M_A17C1_3_HR	;
+DO	td_MP3M_A17C2_3_HR	=	TD.MP3M_A17C2_3_HR	;
+DO	td_MP3M_A17C3_3_HR	=	TD.MP3M_A17C3_3_HR	;
+DO	td_MP3M_A17C4_3_HR	=	TD.MP3M_A17C4_3_HR	;
+DO	td_MP3M_A17C5_3_HR	=	TD.MP3M_A17C5_3_HR	;
+DO	td_MP3M_A17DE_3_HR	=	TD.MP3M_A17DE_3_HR	;
+DO	td_MP3M_A17GZ_3_HR	=	TD.MP3M_A17GZ_3_HR	;
+DO	td_MP3M_A17JZ_3_HR	=	TD.MP3M_A17JZ_3_HR	;
+DO	td_MP51F_A17C3_3_HR	=	TD.MP51F_A17C3_3_HR	;
+DO	td_MP51F_A17C4_3_HR	=	TD.MP51F_A17C4_3_HR	;
+DO	td_MP51F_A17C5_3_HR	=	TD.MP51F_A17C5_3_HR	;
+DO	td_MP51F_A17GZ_3_HR	=	TD.MP51F_A17GZ_3_HR	;
+
+DO	td_VP2_A17AZ_1_HR	=	TD.VP2_A17AZ_1_HR	;
+DO	td_VP2_A17C1_1_HR	=	TD.VP2_A17C1_1_HR	;
+DO	td_VP2_A17C2_1_HR	=	TD.VP2_A17C2_1_HR	;
+DO	td_VP2_A17C3_1_HR	=	TD.VP2_A17C3_1_HR	;
+DO	td_VP2_A17C4_1_HR	=	TD.VP2_A17C4_1_HR	;
+DO	td_VP2_A17C5_1_HR	=	TD.VP2_A17C5_1_HR	;
+DO	td_VP2_A17DE_1_HR	=	TD.VP2_A17DE_1_HR	;
+DO	td_VP2_A17FZ_1_HR	=	TD.VP2_A17FZ_1_HR	;
+DO	td_VP2_A17GZ_1_HR	=	TD.VP2_A17GZ_1_HR	;
+DO	td_VP2_A17HZ_1_HR	=	TD.VP2_A17HZ_1_HR	;
+DO	td_VP2_A17IZ_1_HR	=	TD.VP2_A17IZ_1_HR	;
+DO	td_VP2_A17JZ_1_HR	=	TD.VP2_A17JZ_1_HR	;
+DO	td_VP2_A17KZ_1_HR	=	TD.VP2_A17KZ_1_HR	;
+DO	td_VP2_A17LZ_1_HR	=	TD.VP2_A17LZ_1_HR	;
+DO	td_VP2_A17MN_1_HR	=	TD.VP2_A17MN_1_HR	;
+DO	td_VP2_A17OQ_1_HR	=	TD.VP2_A17OQ_1_HR	;
+DO	td_VP2_A17RU_1_HR	=	TD.VP2_A17RU_1_HR	;
+DO	td_VP4M_A17AZ_1_HR	=	TD.VP4M_A17AZ_1_HR	;
+DO	td_VP4M_A17C1_1_HR	=	TD.VP4M_A17C1_1_HR	;
+DO	td_VP4M_A17C2_1_HR	=	TD.VP4M_A17C2_1_HR	;
+DO	td_VP4M_A17C3_1_HR	=	TD.VP4M_A17C3_1_HR	;
+DO	td_VP4M_A17C4_1_HR	=	TD.VP4M_A17C4_1_HR	;
+DO	td_VP4M_A17C5_1_HR	=	TD.VP4M_A17C5_1_HR	;
+DO	td_VP4M_A17DE_1_HR	=	TD.VP4M_A17DE_1_HR	;
+DO	td_VP4M_A17FZ_1_HR	=	TD.VP4M_A17FZ_1_HR	;
+DO	td_VP4M_A17GZ_1_HR	=	TD.VP4M_A17GZ_1_HR	;
+DO	td_VP4M_A17HZ_1_HR	=	TD.VP4M_A17HZ_1_HR	;
+DO	td_VP4M_A17IZ_1_HR	=	TD.VP4M_A17IZ_1_HR	;
+DO	td_VP4M_A17JZ_1_HR	=	TD.VP4M_A17JZ_1_HR	;
+DO	td_VP4M_A17KZ_1_HR	=	TD.VP4M_A17KZ_1_HR	;
+DO	td_VP4M_A17LZ_1_HR	=	TD.VP4M_A17LZ_1_HR	;
+DO	td_VP4M_A17MN_1_HR	=	TD.VP4M_A17MN_1_HR	;
+DO	td_VP4M_A17OQ_1_HR	=	TD.VP4M_A17OQ_1_HR	;
+DO	td_VP4M_A17RU_1_HR	=	TD.VP4M_A17RU_1_HR	;
+DO	td_VP51_A17C3_1_HR	=	TD.VP51_A17C3_1_HR	;
+DO	td_VP51_A17C4_1_HR	=	TD.VP51_A17C4_1_HR	;
+DO	td_VP51_A17C5_1_HR	=	TD.VP51_A17C5_1_HR	;
+DO	td_VP51_A17FZ_1_HR	=	TD.VP51_A17FZ_1_HR	;
+DO	td_VP51_A17JZ_1_HR	=	TD.VP51_A17JZ_1_HR	;
+DO	td_VP51_A17LZ_1_HR	=	TD.VP51_A17LZ_1_HR	;
+DO	td_VP51_A17MN_1_HR	=	TD.VP51_A17MN_1_HR	;
+DO	td_VP51_A17RU_1_HR	=	TD.VP51_A17RU_1_HR	;
+DO	td_MP2_A17AZ_1_HR	=	TD.MP2_A17AZ_1_HR	;
+DO	td_MP2_A17C1_1_HR	=	TD.MP2_A17C1_1_HR	;
+DO	td_MP2_A17C2_1_HR	=	TD.MP2_A17C2_1_HR	;
+DO	td_MP2_A17C3_1_HR	=	TD.MP2_A17C3_1_HR	;
+DO	td_MP2_A17C4_1_HR	=	TD.MP2_A17C4_1_HR	;
+DO	td_MP2_A17C5_1_HR	=	TD.MP2_A17C5_1_HR	;
+DO	td_MP2_A17DE_1_HR	=	TD.MP2_A17DE_1_HR	;
+DO	td_MP2_A17GZ_1_HR	=	TD.MP2_A17GZ_1_HR	;
+DO	td_MP2_A17JZ_1_HR	=	TD.MP2_A17JZ_1_HR	;
+DO	td_MP3M_A17AZ_1_HR	=	TD.MP3M_A17AZ_1_HR	;
+DO	td_MP3M_A17C1_1_HR	=	TD.MP3M_A17C1_1_HR	;
+DO	td_MP3M_A17C2_1_HR	=	TD.MP3M_A17C2_1_HR	;
+DO	td_MP3M_A17C3_1_HR	=	TD.MP3M_A17C3_1_HR	;
+DO	td_MP3M_A17C4_1_HR	=	TD.MP3M_A17C4_1_HR	;
+DO	td_MP3M_A17C5_1_HR	=	TD.MP3M_A17C5_1_HR	;
+DO	td_MP3M_A17DE_1_HR	=	TD.MP3M_A17DE_1_HR	;
+DO	td_MP3M_A17GZ_1_HR	=	TD.MP3M_A17GZ_1_HR	;
+DO	td_MP3M_A17JZ_1_HR	=	TD.MP3M_A17JZ_1_HR	;
+DO	td_MP51F_A17C3_1_HR	=	TD.MP51F_A17C3_1_HR	;
+DO	td_MP51F_A17C4_1_HR	=	TD.MP51F_A17C4_1_HR	;
+DO	td_MP51F_A17C5_1_HR	=	TD.MP51F_A17C5_1_HR	;
+DO	td_MP51F_A17GZ_1_HR	=	TD.MP51F_A17GZ_1_HR	;
+
+DO	td_mp6_A17AZ_3	=	TD.mp6_A17AZ_3	;
+DO	td_mp6_A17C1_3	=	TD.mp6_A17C1_3	;
+DO	td_mp6_A17C2_3	=	TD.mp6_A17C2_3	;
+DO	td_mp6_A17C3_3	=	TD.mp6_A17C3_3	;
+DO	td_mp6_A17C4_3	=	TD.mp6_A17C4_3	;
+DO	td_mp6_A17C5_3	=	TD.mp6_A17C5_3	;
+DO	td_mp6_A17DE_3	=	TD.mp6_A17DE_3	;
+DO	td_mp6_A17GZ_3	=	TD.mp6_A17GZ_3	;
+DO	td_mp6_A17JZ_3	=	TD.mp6_A17JZ_3	;
+
+DO	td_mp6_A17AZ_1	=	TD.mp6_A17AZ_1	;
+DO	td_mp6_A17C1_1	=	TD.mp6_A17C1_1	;
+DO	td_mp6_A17C2_1	=	TD.mp6_A17C2_1	;
+DO	td_mp6_A17C3_1	=	TD.mp6_A17C3_1	;
+DO	td_mp6_A17C4_1	=	TD.mp6_A17C4_1	;
+DO	td_mp6_A17C5_1	=	TD.mp6_A17C5_1	;
+DO	td_mp6_A17DE_1	=	TD.mp6_A17DE_1	;
+DO	td_mp6_A17GZ_1	=	TD.mp6_A17GZ_1	;
+DO	td_mp6_A17JZ_1	=	TD.mp6_A17JZ_1	;
+
+
+/*************************************************************************************************/
+/****************** Construction marges commerciales valeur calées  ******************************/
+/*************************************************************************************************/
+
+// Liste1, secteurs sans marges p51, les autres avec marges investissement
+DO lmarg1 = C.("az","c1","c2","de","jz") ; 
+DO lmarg2 = C.("c3","c4","c5","gz") ;
+
+&execmd "do td_mp3m_@(lmarg2)3 = (td_memp_@(lmarg2)3-td_mp6_a17@(lmarg2)_3)*td_mp3m_a17@(lmarg2)_3_hr/(td_mp3m_a17@(lmarg2)_3_hr+td_mp51f_a17@(lmarg2)_3_hr+td_mp2_a17@(lmarg2)_3_hr) ; " ;
+&execmd "do td_mp2_@(lmarg2)3 = (td_memp_@(lmarg2)3-td_mp6_a17@(lmarg2)_3)*td_mp2_a17@(lmarg2)_3_hr/(td_mp3m_a17@(lmarg2)_3_hr+td_mp51f_a17@(lmarg2)_3_hr+td_mp2_a17@(lmarg2)_3_hr) ; " ;
+&execmd "do td_mp51_@(lmarg2)3 = (td_memp_@(lmarg2)3-td_mp6_a17@(lmarg2)_3)*td_mp51f_a17@(lmarg2)_3_hr/(td_mp3m_a17@(lmarg2)_3_hr+td_mp51f_a17@(lmarg2)_3_hr+td_mp2_a17@(lmarg2)_3_hr) ; " ;
+&execmd "do td_mp3m_@(lmarg1)3 = (td_memp_@(lmarg1)3-td_mp6_a17@(lmarg1)_3)*td_mp3m_a17@(lmarg1)_3_hr/(td_mp3m_a17@(lmarg1)_3_hr+td_mp2_a17@(lmarg1)_3_hr) ; " ;
+&execmd "do td_mp2_@(lmarg1)3 = (td_memp_@(lmarg1)3-td_mp6_a17@(lmarg1)_3)*td_mp2_a17@(lmarg1)_3_hr/(td_mp3m_a17@(lmarg1)_3_hr+td_mp2_a17@(lmarg1)_3_hr) ; " ;
+
+
+// Construction marges commerciales volume non calées (sauf mp6 déjà calé)
+&execmd "do td_mp3m_@(lmarg2)7_ch = td_memp_@(lmarg2)7_ch*td_mp3m_a17@(lmarg2)_1_hr/(td_mp6_a17@(lmarg2)_1+td_mp3m_a17@(lmarg2)_1_hr+td_mp51f_a17@(lmarg2)_1_hr+td_mp2_a17@(lmarg2)_1_hr) ; " ;
+&execmd "do td_mp2_@(lmarg2)7_ch = td_memp_@(lmarg2)7_ch*td_mp2_a17@(lmarg2)_1_hr/(td_mp6_a17@(lmarg2)_1+td_mp3m_a17@(lmarg2)_1_hr+td_mp51f_a17@(lmarg2)_1_hr+td_mp2_a17@(lmarg2)_1_hr) ; " ;
+&execmd "do td_mp51_@(lmarg2)7_ch = td_memp_@(lmarg2)7_ch*td_mp51f_a17@(lmarg2)_1_hr/(td_mp6_a17@(lmarg2)_1+td_mp3m_a17@(lmarg2)_1_hr+td_mp51f_a17@(lmarg2)_1_hr+td_mp2_a17@(lmarg2)_1_hr) ; " ;
+&execmd "do td_mp3m_@(lmarg1)7_ch = td_memp_@(lmarg1)7_ch*td_mp3m_a17@(lmarg1)_1_hr/(td_mp6_a17@(lmarg1)_1+td_mp3m_a17@(lmarg1)_1_hr+td_mp2_a17@(lmarg1)_1_hr) ; " ;
+&execmd "do td_mp2_@(lmarg1)7_ch = td_memp_@(lmarg1)7_ch*td_mp2_a17@(lmarg1)_1_hr/(td_mp6_a17@(lmarg1)_1+td_mp3m_a17@(lmarg1)_1_hr+td_mp2_a17@(lmarg1)_1_hr) ; " ;
+
+&execmd "do td_mp6_@(lmarg1)3 = td_mp6_a17@(lmarg1)_3 ; " ;
+&execmd "do td_mp6_@(lmarg2)3 = td_mp6_a17@(lmarg2)_3 ; " ;
+&execmd "do td_mp6_@(lmarg1)7_ch = td_mp6_a17@(lmarg1)_1 ; " ;
+&execmd "do td_mp6_@(lmarg2)7_ch = td_mp6_a17@(lmarg2)_1 ; " ;
+
+
+// Génération des 7 - 0 - 9_ch...
+DO lmarg3 = C.("mp2_"||lmarg2,"mp3m_"||lmarg2,"mp51_"||lmarg2,"mp2_"||lmarg1,"mp3m_"||lmarg1,"mp6_"||lmarg1,"mp6_"||lmarg2);
+
+      // en CVS-CJO
+         DO cvscjo0    = "td_"||Lmarg3||"0";       // liste prix A-1
+         DO cvscjo9_ch = "td_"||lmarg3||"9_ch";    // liste prix chaînés
+         DO cvscjo7    = "td_"||lmarg3||"7";       // liste volume au prix A-1
+         DO cvscjo7_ch = "td_"||lmarg3||"7_ch";    // liste volume chaîné
+         DO cvscjo3    = "td_"||lmarg3||"3";       // liste valeur
+
+      // en brut
+         DO brut0      = "td_"||lmarg3||"0";        // liste prix A-1
+         DO brut9_ch   = "td_"||lmarg3||"9_ch";     // liste prix chaînés
+         DO brut7      = "td_"||lmarg3||"7";        // liste volume au prix A-1
+         DO brut7_ch   = "td_"||lmarg3||"7_ch";     // liste volume chaîné
+         DO brut3      = "td_"||lmarg3||"3";        // liste valeur
+
+      &execmd "do @(brut0)      = pxbasevolch'f(@(brut7_ch),@(brut3))" ";";     // vol. chaîné et valeur -> prix A-1 le maillon est brut
+      &execmd "do @(cvscjo0)    = pxbasevolch'f(@(cvscjo7_ch),@(cvscjo3))" ";"; // vol. chaîné et valeur -> prix A-1 le maillon est cvs-cjo
+      &execmd "do @(cvscjo9_ch) = 100*@(cvscjo3)/@(cvscjo7_ch)"            ";"; // prix chaîné (en cvs-cjo)
+      &execmd "do @(cvscjo7)    = @(brut0)*@(cvscjo7_ch)"                  ";"; // vol. chaîné -> vol. prix A-1
+      &execmd "do @(brut7)      = @(brut0)*@(brut7_ch)"                    ";"; // vol. chaîné -> vol. prix A-1 en brut
+
+
+// Recalage des 7 et création des 3 en "don"
+&execmd "do don_td_mp3m_@(lmarg2)7 = td_mp3m_@(lmarg2)7*(td_memp_@(lmarg2)7-td_mp6_@(lmarg2)7)/(td_mp3m_@(lmarg2)7+td_mp2_@(lmarg2)7+td_mp51_@(lmarg2)7) ; " ;
+&execmd "do don_td_mp2_@(lmarg2)7 = td_mp2_@(lmarg2)7*(td_memp_@(lmarg2)7-td_mp6_@(lmarg2)7)/(td_mp3m_@(lmarg2)7+td_mp2_@(lmarg2)7+td_mp51_@(lmarg2)7) ; " ;
+&execmd "do don_td_mp51_@(lmarg2)7 = td_mp51_@(lmarg2)7*(td_memp_@(lmarg2)7-td_mp6_@(lmarg2)7)/(td_mp3m_@(lmarg2)7+td_mp2_@(lmarg2)7+td_mp51_@(lmarg2)7) ; " ;
+&execmd "do don_td_mp6_@(lmarg2)7 = td_mp6_@(lmarg2)7;";
+
+&execmd "do don_td_mp3m_@(lmarg1)7 = td_mp3m_@(lmarg1)7*(td_memp_@(lmarg1)7-td_mp6_@(lmarg1)7)/(td_mp3m_@(lmarg1)7+td_mp2_@(lmarg1)7) ; " ;
+&execmd "do don_td_mp2_@(lmarg1)7 = td_mp2_@(lmarg1)7*(td_memp_@(lmarg1)7-td_mp6_@(lmarg1)7)/(td_mp3m_@(lmarg1)7+td_mp2_@(lmarg1)7) ; " ;
+&execmd "do don_td_mp6_@(lmarg1)7 = td_mp6_@(lmarg1)7;";
+
+&execmd "do don_td_@(lmarg3)3 = td_@(lmarg3)3;";
+
+// Agrégation au niveau branches Mésange
+
+DO don_td_mp3m_dai3 = don_td_mp3m_az3 + don_td_mp3m_c13  + don_td_mp3m_c33 + don_td_mp3m_c43 + don_td_mp3m_c53;
+DO don_td_mp2_dai3 = don_td_mp2_az3 + don_td_mp2_c13  + don_td_mp2_c33 + don_td_mp2_c43 + don_td_mp2_c53;
+DO don_td_mp51_dai3 = don_td_mp51_c33 + don_td_mp51_c43 + don_td_mp51_c53;
+DO don_td_mp6_dai3 = don_td_mp6_az3 + don_td_mp6_c13  + don_td_mp6_c33 + don_td_mp6_c43 + don_td_mp6_c53;
+
+DO don_td_mp3m_dse3 = don_td_mp3m_jz3 ;
+DO don_td_mp2_dse3 = don_td_mp2_jz3 ;
+DO don_td_mp6_dse3 = don_td_mp6_jz3 ;
+
+DO don_td_mp3m_nrj3 = don_td_mp3m_de3 + don_td_mp3m_c23;
+DO don_td_mp2_nrj3 = don_td_mp2_de3 + don_td_mp2_c23;
+DO don_td_mp6_nrj3 = don_td_mp6_de3 + don_td_mp6_c23;
+
+DO don_td_mp3m_dai7 = don_td_mp3m_az7 + don_td_mp3m_c17  + don_td_mp3m_c37 + don_td_mp3m_c47 + don_td_mp3m_c57;
+DO don_td_mp2_dai7 = don_td_mp2_az7 + don_td_mp2_c17  + don_td_mp2_c37 + don_td_mp2_c47 + don_td_mp2_c57;
+DO don_td_mp51_dai7 = don_td_mp51_c37 + don_td_mp51_c47 + don_td_mp51_c57;
+DO don_td_mp6_dai7 = don_td_mp6_az7 + don_td_mp6_c17  + don_td_mp6_c37 + don_td_mp6_c47 + don_td_mp6_c57;
+
+DO don_td_mp3m_dse7 = don_td_mp3m_jz7 ;
+DO don_td_mp2_dse7 = don_td_mp2_jz7 ;
+DO don_td_mp6_dse7 = don_td_mp6_jz7 ;
+
+DO don_td_mp3m_nrj7 = don_td_mp3m_de7 + don_td_mp3m_c27;
+DO don_td_mp2_nrj7 = don_td_mp2_de7 + don_td_mp2_c27;
+DO don_td_mp6_nrj7 = don_td_mp6_de7 + don_td_mp6_c27;
+
+// Calcul des marges de la branche commerce par différence
+DO don_td_mp3m_dsa3 = -don_td_mp3m_dai3 - don_td_mp3m_dse3 - don_td_mp3m_nrj3;
+DO don_td_mp2_dsa3 = -don_td_mp2_dai3 - don_td_mp2_dse3 - don_td_mp2_nrj3;
+DO don_td_mp51_dsa3 = -don_td_mp51_dai3 ;
+DO don_td_mp6_dsa3 = -don_td_mp6_dai3 - don_td_mp6_dse3 - don_td_mp6_nrj3;
+
+DO don_td_mp3m_dsa7 = -don_td_mp3m_dai7 - don_td_mp3m_dse7 - don_td_mp3m_nrj7;
+DO don_td_mp2_dsa7 = -don_td_mp2_dai7 - don_td_mp2_dse7 - don_td_mp2_nrj7;
+DO don_td_mp51_dsa7 = -don_td_mp51_dai7 ;
+DO don_td_mp6_dsa7 = -don_td_mp6_dai7 - don_td_mp6_dse7 - don_td_mp6_nrj7;
+
+//Reconstruction du 7_ch et des autres
+
+DO lmarg4 = C.("mp3m_dai","mp2_dai","mp51_dai","mp3m_dse","mp2_dse","mp3m_dsa","mp2_dsa","mp51_dsa",
+				"mp3m_nrj","mp2_nrj","mp6_dai","mp6_dse","mp6_dsa","mp6_nrj");
+      // en CVS-CJO uniquement
+         DO o_cvscjo0    = "td_"||lmarg4||"0";       // liste prix A-1
+         DO o_cvscjo9_ch = "td_"||lmarg4||"9_ch";    // liste prix chaînés
+         DO o_cvscjo7    = "td_"||lmarg4||"7";       // liste volume au prix A-1
+         DO o_cvscjo7_ch = "td_"||lmarg4||"7_ch";    // liste volume chaîné
+         DO o_cvscjo3    = "td_"||lmarg4||"3";       // liste valeur
+
+      // le coefficient correctif associé
+         DO liste_coef = "corr_"||lmarg4;
+         DO PRT.(liste_coef);
+
+         &execmd "do don_@(o_cvscjo0)    = pxbasevolvo'f(don_@(o_cvscjo7),don_@(o_cvscjo3))" ";" ;
+         &execmd "do don_@(o_cvscjo7_ch) = don_@(o_cvscjo7)/don_@(o_cvscjo0)"                ";" ;
+         &execmd "do don_@(o_cvscjo9_ch) = 100*don_@(o_cvscjo3)/don_@(o_cvscjo7_ch)"         ";" ;
+         &execmd "do don_@(liste_coef)   = 1*td_pib3/td_pib3 " ";" ;
+
+
+
+
+//création d'un prix de production y compris marges commerciales
+DO don_td_p3m_hm_dai3=don_td_p3m_dai3+don_td_mp3m_dai3;
+DO don_td_p3m_hm_dse3=don_td_p3m_dse3+don_td_mp3m_dse3;
+DO don_td_p3m_hm_dsa3=don_td_p3m_dsa3+don_td_mp3m_dsa3;
+DO don_td_p3m_hm_nrj3=don_td_p3m_nrj3+don_td_mp3m_nrj3;
+DO don_td_p3m_hm_dai7=don_td_p3m_dai7+don_td_mp3m_dai7;
+DO don_td_p3m_hm_dse7=don_td_p3m_dse7+don_td_mp3m_dse7;
+DO don_td_p3m_hm_dsa7=don_td_p3m_dsa7+don_td_mp3m_dsa7;
+DO don_td_p3m_hm_nrj7=don_td_p3m_nrj7+don_td_mp3m_nrj7;
+		 
+DO listehm = C.("p3m_hm_dai","p3m_hm_dse","p3m_hm_dsa","p3m_hm_nrj");
+      // en CVS-CJO uniquement
+         DO liste0    = "td_"||listehm||"0";       // liste prix A-1
+         DO liste9_ch = "td_"||listehm||"9_ch";    // liste prix chaînés
+         DO liste7    = "td_"||listehm||"7";       // liste volume au prix A-1
+         DO liste7_ch = "td_"||listehm||"7_ch";    // liste volume chaîné
+         DO liste3    = "td_"||listehm||"3";       // liste valeur
+         DO liste_coefhm = "corr_"||listehm;
+         DO PRT.(liste_coefhm);
+         
+         &execmd "do don_@(liste0)    = pxbasevolvo'f(don_@(liste7),don_@(liste3))" ";" ;
+         &execmd "do don_@(liste7_ch) = don_@(liste7)/don_@(liste0)"                ";" ;
+         &execmd "do don_@(liste9_ch) = 100*don_@(liste3)/don_@(liste7_ch)"         ";" ;
+         &execmd "do don_@(liste_coefhm)   =  1*td_pib3/td_pib3 " ";" ;
+
+
+
+/*************************************************************************************************/
+/*************************************FIN PARTIE MARGES******************************************/
+/*************************************************************************************************/
+
+
+
+
+
+/*************************************************************************************************/
+/************************** Construction TVA valeurs calées  **************************************/
+/*************************************************************************************************/
+
+
+//ceux où il n'y a pas P51m : az, c1, c2, hz, kz, gz, de, oq, iz
+DO all =  C.("c3","c4","c5","jz","mn","ru","fz","lz");
+DO pasP51 = C.("az","c1","c2","hz","kz","gz","de","oq","iz");
+
+// en valeur
+	// cas général
+&execmd "do td_vp4m_@(all)3 = td_vp4m_a17@(all)_3_hr*td_d211_@(all)3/(td_vp4m_a17@(all)_3_hr+td_vp2_a17@(all)_3_hr+td_vp51_a17@(all)_3_hr) ; " ;
+&execmd "do td_vp2_@(all)3  = td_vp2_a17@(all)_3_hr*td_d211_@(all)3/(td_vp4m_a17@(all)_3_hr+td_vp2_a17@(all)_3_hr+td_vp51_a17@(all)_3_hr) ; "  ;
+&execmd "do td_vp51_@(all)3 = td_vp51_a17@(all)_3_hr*td_d211_@(all)3/(td_vp4m_a17@(all)_3_hr+td_vp2_a17@(all)_3_hr+td_vp51_a17@(all)_3_hr) ; " ;
+	// variables sans tva sur p51
+&execmd "do td_vp4m_@(pasP51)3 = td_vp4m_a17@(pasP51)_3_hr*td_d211_@(pasP51)3/(td_vp4m_a17@(pasP51)_3_hr+td_vp2_a17@(pasP51)_3_hr) ; " ;
+&execmd "do td_vp2_@(pasP51)3  = td_vp2_a17@(pasP51)_3_hr*td_d211_@(pasP51)3/(td_vp4m_a17@(pasP51)_3_hr +td_vp2_a17@(pasP51)_3_hr) ; "  ;
+
+// volume non calé
+	// cas général
+&execmd "do td_vp4m_@(all)7_ch_approx = td_vp4m_a17@(all)_1_hr*td_d211_@(all)7_ch/(td_vp4m_a17@(all)_1_hr+td_vp2_a17@(all)_1_hr+td_vp51_a17@(all)_1_hr) ; " ;
+&execmd "do td_vp2_@(all)7_ch_approx  = td_vp2_a17@(all)_1_hr*td_d211_@(all)7_ch/(td_vp4m_a17@(all)_1_hr+td_vp2_a17@(all)_1_hr+td_vp51_a17@(all)_1_hr) ; " ;
+&execmd "do td_vp51_@(all)7_ch_approx = td_vp51_a17@(all)_1_hr*td_d211_@(all)7_ch/(td_vp4m_a17@(all)_1_hr+td_vp2_a17@(all)_1_hr+td_vp51_a17@(all)_1_hr) ; " ;
+	// variables sans tva sur P51
+&execmd "do td_vp4m_@(pasP51)7_ch_approx = td_vp4m_a17@(pasP51)_1_hr*td_d211_@(pasP51)7_ch/(td_vp4m_a17@(pasP51)_1_hr+td_vp2_a17@(pasP51)_1_hr) ; " ;
+&execmd "do td_vp2_@(pasP51)7_ch_approx  = td_vp2_a17@(pasP51)_1_hr*td_d211_@(pasP51)7_ch/(td_vp4m_a17@(pasP51)_1_hr+td_vp2_a17@(pasP51)_1_hr) ; " ;
+
+
+//   Construction des séries de tva en 7 et autre à partir de 7_ch temporaire et 3       
+      
+DO out = C.("vp2_az","vp2_c1","vp2_c2","vp2_c3","vp2_c4","vp2_c5","vp2_hz","vp2_jz","vp2_kz","vp2_mn","vp2_fz","vp2_gz","vp2_iz","vp2_lz","vp2_ru","vp2_de","vp2_oq",
+    			"vp4m_az","vp4m_c1","vp4m_c2","vp4m_c3","vp4m_c4","vp4m_c5","vp4m_hz","vp4m_jz","vp4m_kz","vp4m_mn","vp4m_fz","vp4m_gz","vp4m_iz","vp4m_lz","vp4m_ru","vp4m_de","vp4m_oq",
+    			"vp51_c3","vp51_c4","vp51_c5","vp51_jz","vp51_mn","vp51_fz","vp51_lz","vp51_ru");
+DO PRT.(out);
+
+
+      
+      // en CVS-CJO
+         DO cvscjo0    = "td_"||out||"0";       // liste prix A-1
+         DO cvscjo9_ch = "td_"||out||"9_ch";    // liste prix chaînés
+         DO cvscjo7    = "td_"||out||"7";       // liste volume au prix A-1
+         DO cvscjo7_ch = "td_"||out||"7_ch_approx";    // liste volume chaîné
+         DO cvscjo3    = "td_"||out||"3";       // liste valeur
+
+      // en brut
+         DO brut0      = "td_"||out||"0";        // liste prix A-1
+         DO brut9_ch   = "td_"||out||"9_ch";     // liste prix chaînés
+         DO brut7      = "td_"||out||"7";        // liste volume au prix A-1
+         DO brut7_ch   = "td_"||out||"7_ch_approx";     // liste volume chaîné
+         DO brut3      = "td_"||out||"3";        // liste valeur
+
+      &execmd "do @(brut0)      = pxbasevolch'f(@(brut7_ch),@(brut3))" ";";     // vol. chaîné et valeur -> prix A-1 le maillon est brut
+      &execmd "do @(cvscjo0)    = pxbasevolch'f(@(cvscjo7_ch),@(cvscjo3))" ";"; // vol. chaîné et valeur -> prix A-1 le maillon est cvs-cjo
+      &execmd "do @(cvscjo9_ch) = 100*@(cvscjo3)/@(cvscjo7_ch)"            ";"; // prix chaîné (en cvs-cjo)
+      &execmd "do @(cvscjo7)    = @(brut0)*@(cvscjo7_ch)"                  ";"; // vol. chaîné -> vol. prix A-1
+      &execmd "do @(brut7)      = @(brut0)*@(brut7_ch)"                    ";"; // vol. chaîné -> vol. prix A-1 en brut
+
+// Recalage des 7  et création des 3 en "don"
+	  &execmd "do don_td_vp2_@(all)7 = td_d211_@(all)7 * td_vp2_@(all)7 /(td_vp2_@(all)7+td_vp4m_@(all)7+td_vp51_@(all)7);";
+	  &execmd "do don_td_vp4m_@(all)7= td_d211_@(all)7 * td_vp4m_@(all)7 /(td_vp2_@(all)7+td_vp4m_@(all)7+td_vp51_@(all)7);";
+	  &execmd "do don_td_vp51_@(all)7= td_d211_@(all)7 * td_vp51_@(all)7 /(td_vp2_@(all)7+td_vp4m_@(all)7+td_vp51_@(all)7);";
+	   
+	  &execmd "do don_td_vp2_@(pasP51)7= td_d211_@(pasP51)7 * td_vp2_@(pasP51)7 /(td_vp2_@(pasP51)7+td_vp4m_@(pasP51)7);";
+	  &execmd "do don_td_vp4m_@(pasP51)7= td_d211_@(pasP51)7 * td_vp4m_@(pasP51)7 /(td_vp2_@(pasP51)7+td_vp4m_@(pasP51)7);";
+		  
+	  &execmd "do don_td_@(out)3 = td_@(out)3;";
+
+// Agrégation au niveau branches Mésange
+
+DO don_td_vp4m_dai3 = don_td_vp4m_az3 + don_td_vp4m_c13  + don_td_vp4m_c33 + don_td_vp4m_c43 + don_td_vp4m_c53;
+DO don_td_vp2_dai3 = don_td_vp2_az3 + don_td_vp2_c13  + don_td_vp2_c33 + don_td_vp2_c43 + don_td_vp2_c53;
+DO don_td_vp51_dai3 =  don_td_vp51_c33 + don_td_vp51_c43 + don_td_vp51_c53;
+
+DO don_td_vp4m_dse3 = don_td_vp4m_hz3 + don_td_vp4m_jz3 + don_td_vp4m_kz3  + don_td_vp4m_mn3 ;
+DO don_td_vp2_dse3 = don_td_vp2_hz3 + don_td_vp2_jz3 + don_td_vp2_kz3 + don_td_vp2_mn3 ;
+DO don_td_vp51_dse3 = don_td_vp51_jz3 + don_td_vp51_mn3 ;
+
+DO don_td_vp4m_dsa3 = don_td_vp4m_gz3 + don_td_vp4m_ru3 + don_td_vp4m_fz3 + don_td_vp4m_lz3 + don_td_vp4m_iz3 ;
+DO don_td_vp2_dsa3 = don_td_vp2_gz3 + don_td_vp2_ru3 + don_td_vp2_fz3 + don_td_vp2_lz3 + don_td_vp2_iz3;
+DO don_td_vp51_dsa3 = don_td_vp51_ru3 + don_td_vp51_fz3 + don_td_vp51_lz3 ;
+
+DO don_td_vp4m_nrj3 = don_td_vp4m_c23 + don_td_vp4m_de3  ;
+DO don_td_vp2_nrj3 = don_td_vp2_c23 + don_td_vp2_de3 ;
+
+DO don_td_vp4m_dsn3 = don_td_vp4m_oq3   ;
+DO don_td_vp2_dsn3 = don_td_vp2_oq3  ;
+
+DO don_td_vp4m_dai7 = don_td_vp4m_az7 + don_td_vp4m_c17  + don_td_vp4m_c37 + don_td_vp4m_c47 + don_td_vp4m_c57 ;
+DO don_td_vp2_dai7 = don_td_vp2_az7 + don_td_vp2_c17  + don_td_vp2_c37 + don_td_vp2_c47 + don_td_vp2_c57;
+DO don_td_vp51_dai7 =  don_td_vp51_c37 + don_td_vp51_c47 + don_td_vp51_c57;
+
+DO don_td_vp4m_dse7 = don_td_vp4m_hz7 + don_td_vp4m_jz7 + don_td_vp4m_kz7  + don_td_vp4m_mn7 ;
+DO don_td_vp2_dse7 = don_td_vp2_hz7 + don_td_vp2_jz7 + don_td_vp2_kz7 + don_td_vp2_mn7 ;
+DO don_td_vp51_dse7 = don_td_vp51_jz7 + don_td_vp51_mn7;
+
+DO don_td_vp4m_dsa7 = don_td_vp4m_gz7 + don_td_vp4m_ru7 + don_td_vp4m_fz7 + don_td_vp4m_lz7 + don_td_vp4m_iz7 ;
+DO don_td_vp2_dsa7 = don_td_vp2_gz7 + don_td_vp2_ru7 + don_td_vp2_fz7 + don_td_vp2_lz7 + don_td_vp2_iz7 ;
+DO don_td_vp51_dsa7 = don_td_vp51_ru7 + don_td_vp51_fz7 + don_td_vp51_lz7 ;
+
+DO don_td_vp4m_nrj7 = don_td_vp4m_c27 + don_td_vp4m_de7  ;
+DO don_td_vp2_nrj7 = don_td_vp2_c27 + don_td_vp2_de7 ;
+
+DO don_td_vp4m_dsn7 = don_td_vp4m_oq7  ;
+DO don_td_vp2_dsn7 = don_td_vp2_oq7  ;
+
+
+
+//Reconstruction du 7_ch et des autres
+
+DO tva1 = C.("vp4m_dai","vp2_dai","vp51_dai","vp4m_dse","vp2_dse","vp51_dse","vp4m_dsa","vp2_dsa","vp51_dsa",
+                   "vp4m_nrj","vp2_nrj","vp4m_dsn","vp2_dsn");
+      // en CVS-CJO uniquement
+         DO o_cvscjo0    = "td_"||tva1||"0";       // liste prix A-1
+         DO o_cvscjo9_ch = "td_"||tva1||"9_ch";    // liste prix chaînés
+         DO o_cvscjo7    = "td_"||tva1||"7";       // liste volume au prix A-1
+         DO o_cvscjo7_ch = "td_"||tva1||"7_ch";    // liste volume chaîné
+         DO o_cvscjo3    = "td_"||tva1||"3";       // liste valeur
+
+      // le coefficient correctif associé
+         DO liste_coef = "corr_"||tva1;
+         DO PRT.(liste_coef);
+
+
+         &execmd "do don_@(o_cvscjo0)    = pxbasevolvo'f(don_@(o_cvscjo7),don_@(o_cvscjo3))" ";" ;
+         &execmd "do don_@(o_cvscjo7_ch) = don_@(o_cvscjo7)/don_@(o_cvscjo0)"                ";" ;
+         &execmd "do don_@(o_cvscjo9_ch) = 100*don_@(o_cvscjo3)/don_@(o_cvscjo7_ch)"         ";" ;
+         &execmd "do don_@(liste_coef)   = 1*td_pib3/td_pib3 " ";" ;
+
+
+// construction des taux apparents :
+DO don_tx_vp2_dai = td_vp2_dai3 / (td_p2_dai3 - td_vp2_dai3) ;
+DO don_tx_vp2_dse = td_vp2_dse3 / (td_p2_dse3 - td_vp2_dse3) ;
+DO don_tx_vp2_dsa = td_vp2_dsa3 / (td_p2_dsa3 - td_vp2_dsa3) ;
+DO don_tx_vP2_DSN = td_vp2_dsn3 / (td_p2_dsn3 - td_vp2_dsn3) ;
+DO don_tx_vP2_NRJ = td_vp2_nrj3 / (td_p2_nrj3 - td_vp2_nrj3) ;
+
+DO don_tx_vp4m_dai = td_vp4m_dai3 / (td_p4M_dai3-td_vp4M_dai3) ;
+DO don_tx_vp4m_dse = td_vp4m_dse3 / (td_p4M_dse3-td_vp4M_dse3) ;
+DO don_tx_vp4m_dsa = td_vp4m_dsa3 / (td_p4M_dsa3-td_vp4M_dsa3) ;
+DO don_tx_vp4m_dsn = td_vp4m_dsn3 / (td_p4M_dsn3-td_vp4M_dsn3) ;
+DO don_tx_vp4m_nrj = td_vp4m_nrj3 / (td_p4M_nrj3-td_vp4M_nrj3) ;
+
+DO don_tx_vp51_dai = td_vp51_dai3 / (td_p51_dai3-td_vp51_dai3) ;
+DO don_tx_vp51_dse = td_vp51_dse3 / (td_p51_dse3-td_vp51_dse3) ;
+DO don_tx_vp51_dsa = td_vp51_dsa3 / (td_p51_dsa3-td_vp51_dsa3) ;
+
+DO don_tx_vp51m_d = (td_vp51_dsa3+td_vp51_dse3) / ((td_p51_dsa3+td_p51_dse3)-(td_vp51_dsa3+td_vp51_dse3)) ;  
+DO don_tx_vp51_d  = (td_vp51_dai3+td_vp51_dsa3+td_vp51_dse3) / ((td_p51_dai3+td_p51_dsa3+td_p51_dse3)-(td_vp51_dai3+td_vp51_dsa3+td_vp51_dse3)) ;
+
+
+DO don_tx_mp2_dai  = td_mp2_dai3  / (td_p2_dai3 - td_mp2_dai3)   ;
+DO don_tx_mp2_dse  = td_mp2_dse3  / (td_p2_dse3 - td_mp2_dse3)   ;
+DO don_tx_mp2_dsa  = td_mp2_dsa3  / (td_p2_dsa3 - td_mp2_dsa3)   ;
+DO don_tx_mp2_nrj  = td_mp2_nrj3  / (td_p2_nrj3 - td_mp2_nrj3)   ;
+
+DO don_tx_mp51_dsa = td_mp51_dsa3 / (td_p51_dsa3 - td_mp51_dsa3) ;
+DO don_tx_mp51_dai = td_mp51_dai3 / (td_p51_dai3 - td_mp51_dai3); 
+
+DO don_tx_mp3m_dai = td_mp3m_dai3 / (td_p4m_dai3 - td_mp3m_dai3) ;
+DO don_tx_mp3m_dsa = td_mp3m_dsa3 / (td_p4m_dsa3 - td_mp3m_dsa3) ;
+DO don_tx_mp3m_dse = td_mp3m_dse3 / (td_p4m_dse3 - td_mp3m_dse3) ;
+DO don_tx_mp3m_nrj = td_mp3m_nrj3 / (td_p4m_nrj3 - td_mp3m_nrj3) ;
+
+
+
+DO	
+don_tx_temp_dai = td_temp_dai3 / td_rntpp_dai3,
+don_tx_temp_nrj = td_temp_nrj3 / td_rntpp_nrj3,
+don_tx_temp_dse = td_temp_dse3 / td_rntpp_dse3,
+don_tx_temp_nrj = td_temp_nrj3 / td_rntpp_nrj3,
+
+don_tx_d319_dai = td_d319_dai3 / td_p1_dai3 ,
+don_tx_d319_dse = td_d319_dse3 / td_p1_dse3 ,
+don_tx_d319_dsa = td_d319_dsa3 / td_p1_dsa3 ,
+don_tx_d319_nrj = td_d319_nrj3 / td_p1_nrj3 ,
+don_tx_d319_dsn = td_d319_dsn3 / td_p1_dsn3 ,
+
+don_tx_d212_dai = td_d212_dai3 / td_p7_dai3 ,
+don_tx_d212_dse = td_d212_dse3 / td_p7_dse3 ,
+don_tx_d212_nrj = td_d212_nrj3 / td_p7_nrj3 ,
+
+
+
+don_tx_d214_dai = td_d214_dai3 / (td_p3m_dai3/(1+tx_vp4m_dai)), 
+don_tx_d214_dse = td_d214_dse3 / (td_p3m_dse3/(1+tx_vp4m_dse)),
+don_tx_d214_dsa = td_d214_dsa3 / (td_p3m_dsa3/(1+tx_vp4m_dsa)),
+don_tx_d214_nrj = td_d214_nrj3 /((td_p2dhnrj_nrj7_ch + td_p3m_nrj7_ch)/(1+tx_vp4m_nrj))
+ 
+ ;
+
+     //Ressources nationales totales (au prix d'acquisition)
+      DO don_td_rnt2_dai3    = don_td_p1_dai3 + don_td_p7_dai3 + don_td_p73_dai3 + don_td_temp_dai3 + (don_td_d231_dai3-don_td_d211_dai3)  , // dai
+         don_td_rnt2_dai7    = don_td_p1_dai7 + don_td_p7_dai7 + don_td_p73_dai7 + don_td_temp_dai7 + (don_td_d231_dai7-don_td_d211_dai7)  ,
+         don_t_rnt2_dai3     = don_t_p1_dai3  + don_t_p7_dai3  + don_t_p73_dai3 + don_t_temp_dai3  + (don_t_d231_dai3-don_t_d211_dai3)   ,
+         don_t_rnt2_dai7     = don_t_p1_dai7  + don_t_p7_dai7  + don_t_p73_dai7 + don_t_temp_dai7  + (don_t_d231_dai7-don_t_d211_dai7)   ;
+      DO don_td_rnt2_dse3    = don_td_p1_dse3 + don_td_p7_dse3 + don_td_p73_dse3 + don_td_temp_dse3 + (don_td_d231_dse3-don_td_d211_dse3)  , // dse
+         don_td_rnt2_dse7    = don_td_p1_dse7 + don_td_p7_dse7 + don_td_p73_dse7 + don_td_temp_dse7 + (don_td_d231_dse7-don_td_d211_dse7)  ,
+         don_t_rnt2_dse3     = don_t_p1_dse3  + don_t_p7_dse3  + don_t_p73_dse3  + don_t_temp_dse3  + (don_t_d231_dse3-don_t_d211_dse3)   ,
+         don_t_rnt2_dse7     = don_t_p1_dse7  + don_t_p7_dse7  + don_t_p73_dse7  + don_t_temp_dse7  + (don_t_d231_dse7-don_t_d211_dse7)   ;
+      DO don_td_rnt2_dsa3    = don_td_p1_dsa3 + don_td_p7_dsa3 + don_td_p73_dsa3 + don_td_temp_dsa3 + (don_td_d231_dsa3-don_td_d211_dsa3)  , // dsa
+         don_td_rnt2_dsa7    = don_td_p1_dsa7 + don_td_p7_dsa7 + don_td_p73_dsa7 + don_td_temp_dsa7 + (don_td_d231_dsa7-don_td_d211_dsa7)  ,
+         don_t_rnt2_dsa3     = don_t_p1_dsa3  + don_t_p7_dsa3  + don_t_p73_dsa3  + don_t_temp_dsa3  + (don_t_d231_dsa3-don_t_d211_dsa3)   ,
+         don_t_rnt2_dsa7     = don_t_p1_dsa7  + don_t_p7_dsa7  + don_t_p73_dsa7  + don_t_temp_dsa7  + (don_t_d231_dsa7-don_t_d211_dsa7)   ;
+      DO don_td_rnt2_nrj3    = don_td_p1_nrj3 + don_td_p7_nrj3 + don_td_p73_nrj3 + don_td_temp_nrj3 + (don_td_d231_nrj3-don_td_d211_nrj3)  , // nrj
+         don_td_rnt2_nrj7    = don_td_p1_nrj7 + don_td_p7_nrj7 + don_td_p73_nrj7 + don_td_temp_nrj7 + (don_td_d231_nrj7-don_td_d211_nrj7)  ,
+         don_t_rnt2_nrj3     = don_t_p1_nrj3  + don_t_p7_nrj3  + don_t_p73_nrj3  + don_t_temp_nrj3  + (don_t_d231_nrj3-don_t_d211_nrj3)   ,
+         don_t_rnt2_nrj7     = don_t_p1_nrj7  + don_t_p7_nrj7  + don_t_p73_nrj7  + don_t_temp_nrj7  + (don_t_d231_nrj7-don_t_d211_nrj7)   ;
+      DO don_td_rnt2_dsn3    = don_td_p1_dsn3 + don_td_p7_dsn3 + don_td_p73_dsn3 + don_td_temp_dsn3 + (don_td_d231_dsn3-don_td_d211_dsn3)  , // dsn
+         don_td_rnt2_dsn7    = don_td_p1_dsn7 + don_td_p7_dsn7 + don_td_p73_dsn7 + don_td_temp_dsn7 + (don_td_d231_dsn7-don_td_d211_dsn7)  ,
+         don_t_rnt2_dsn3     = don_t_p1_dsn3  + don_t_p7_dsn3  + don_t_p73_dsn3  + don_t_temp_dsn3  + (don_t_d231_dsn3-don_t_d211_dsn3)   ,
+         don_t_rnt2_dsn7     = don_t_p1_dsn7  + don_t_p7_dsn7  + don_t_p73_dsn7  + don_t_temp_dsn7  + (don_t_d231_dsn7-don_t_d211_dsn7)   ;
+     
+       DO don_td_rnt2_d3      = don_td_rnt2_dai3 + don_td_rnt2_dsa3 + don_td_rnt2_dse3 + don_td_rnt2_nrj3 + don_td_rnt2_dsn3 , // d 
+         don_td_rnt2_d7      = don_td_rnt2_dai7 + don_td_rnt2_dsa7 + don_td_rnt2_dse7 + don_td_rnt2_nrj7 + don_td_rnt2_dsn7 ,
+         don_t_rnt2_d3       = don_t_rnt2_dai3  + don_t_rnt2_dsa3  + don_t_rnt2_dse3  + don_t_rnt2_nrj3  + don_t_rnt2_dsn3  ,
+         don_t_rnt2_d7       = don_t_rnt2_dai7  + don_t_rnt2_dsa7  + don_t_rnt2_dse7  + don_t_rnt2_nrj7  + don_t_rnt2_dsn7  ;   
+
+     //Production sur le marché intérieur 
+
+      //Ressources importées (sans PCHTR et PCAFAB)
+       DO don_td_rim2_dai3    = don_td_p7_dai3+don_td_d212_dai3+(don_td_d214_dai3+don_td_temp_dai3)*don_td_p7_dai3/(don_td_p1_dai3+don_td_p7_dai3) , //DAI
+         don_td_rim2_dai7    = don_td_p7_dai7+don_td_d212_dai7+(don_td_d214_dai7+don_td_temp_dai7)*don_td_p7_dai7/(don_td_p1_dai7+don_td_p7_dai7) ,
+         don_t_rim2_dai3     = don_t_p7_dai3 +don_t_d212_dai3 +(don_t_d214_dai3 +don_t_temp_dai3 ) *don_t_p7_dai3/(don_t_p1_dai3+don_t_p7_dai3) ,
+         don_t_rim2_dai7     = don_t_p7_dai7 +don_t_d212_dai7 +(don_t_d214_dai7 +don_t_temp_dai7 ) *don_t_p7_dai7/(don_t_p1_dai7+don_t_p7_dai7) ;
+       DO don_td_rim2_dse3    = don_td_p7_dse3+don_td_d212_dse3+(don_td_d214_dse3+don_td_temp_dse3)*don_td_p7_dse3/(don_td_p1_dse3+don_td_p7_dse3) , //dse
+         don_td_rim2_dse7    = don_td_p7_dse7+don_td_d212_dse7+(don_td_d214_dse7+don_td_temp_dse7)*don_td_p7_dse7/(don_td_p1_dse7+don_td_p7_dse7) ,
+         don_t_rim2_dse3     = don_t_p7_dse3 +don_t_d212_dse3 +(don_t_d214_dse3 +don_t_temp_dse3 ) *don_t_p7_dse3/(don_t_p1_dse3+don_t_p7_dse3) ,
+         don_t_rim2_dse7     = don_t_p7_dse7 +don_t_d212_dse7 +(don_t_d214_dse7 +don_t_temp_dse7 ) *don_t_p7_dse7/(don_t_p1_dse7+don_t_p7_dse7) ;
+       DO don_td_rim2_dsa3    = don_td_p7_dsa3					+(don_td_d214_dsa3+don_td_temp_dsa3)*don_td_p7_dsa3/(don_td_p1_dsa3+don_td_p7_dsa3) , //dsa
+         don_td_rim2_dsa7    = don_td_p7_dsa7					+(don_td_d214_dsa7+don_td_temp_dsa7)*don_td_p7_dsa7/(don_td_p1_dsa7+don_td_p7_dsa7) ,
+         don_t_rim2_dsa3     = don_t_p7_dsa3 					+(don_t_d214_dsa3 +don_t_temp_dsa3 ) *don_t_p7_dsa3/(don_t_p1_dsa3+don_t_p7_dsa3) ,
+         don_t_rim2_dsa7     = don_t_p7_dsa7 					+(don_t_d214_dsa7 +don_t_temp_dsa7 ) *don_t_p7_dsa7/(don_t_p1_dsa7+don_t_p7_dsa7) ;
+       DO don_td_rim2_nrj3    = don_td_p7_nrj3+don_td_d212_nrj3+(don_td_d214_nrj3+don_td_temp_nrj3)*don_td_p7_nrj3/(don_td_p1_nrj3+don_td_p7_nrj3) , //nrj
+         don_td_rim2_nrj7    = don_td_p7_nrj7+don_td_d212_nrj7+(don_td_d214_nrj7+don_td_temp_nrj7)*don_td_p7_nrj7/(don_td_p1_nrj7+don_td_p7_nrj7) ,
+         don_t_rim2_nrj3     = don_t_p7_nrj3 +don_t_d212_nrj3 +(don_t_d214_nrj3 +don_t_temp_nrj3 ) *don_t_p7_nrj3/(don_t_p1_nrj3+don_t_p7_nrj3) ,
+         don_t_rim2_nrj7     = don_t_p7_nrj7 +don_t_d212_nrj7 +(don_t_d214_nrj7 +don_t_temp_nrj7 ) *don_t_p7_nrj7/(don_t_p1_nrj7+don_t_p7_nrj7) ;
+       DO don_td_rim2_dsn3    = don_td_p7_dsn3				+(don_td_d214_dsn3+don_td_temp_dsn3)*don_td_p7_dsn3/(don_td_p1_dsn3+don_td_p7_dsn3) , //dsn
+         don_td_rim2_dsn7    = don_td_p7_dsn7				+(don_td_d214_dsn7+don_td_temp_dsn7)*don_td_p7_dsn7/(don_td_p1_dsn7+don_td_p7_dsn7) ,
+         don_t_rim2_dsn3     = don_t_p7_dsn3 				+(don_t_d214_dsn3 +don_t_temp_dsn3 ) *don_t_p7_dsn3/(don_t_p1_dsn3+don_t_p7_dsn3) ,
+         don_t_rim2_dsn7     = don_t_p7_dsn7 				+(don_t_d214_dsn7 +don_t_temp_dsn7 ) *don_t_p7_dsn7/(don_t_p1_dsn7+don_t_p7_dsn7) ;
+         
+       DO don_td_rim2_d3      = don_td_rim_dai3+don_td_rim_dse3+don_td_rim_dsa3+don_td_rim_nrj3+don_td_rim_dsn3 , //D
+         don_td_rim2_d7      = don_td_rim_dai7+don_td_rim_dse7+don_td_rim_dsa7+don_td_rim_nrj7+don_td_rim_dsn7 ,
+         don_t_rim2_d3       = don_t_rim_dai3+don_t_rim_dse3+don_t_rim_dsa3+don_t_rim_nrj3+don_t_rim_dsn3  ,
+         don_t_rim2_d7       = don_t_rim_dai7+don_t_rim_dse7+don_t_rim_dsa7+don_t_rim_nrj7+don_t_rim_dsn7  ;
+
+   
+   // ***********************************************************************************************************************
+   // *****  Construction des séries utiles à partir des séries agrégées : prix A-1, volume chaîné, prix chaîné         *****
+   // ***********************************************************************************************************************
+      DO o1  = C.("rnt2","rim2");
+      DO out=C.(o1||"_d",o1||"_dai",o1||"_nrj",o1||"_dse",o1||"_dsa",o1||"_dsn");
+      
+      DO PRT.(out);
+      
+      // en CVS-CJO
+         DO o_cvscjo0    = "td_"||OUT||"0";       // liste prix A-1
+         DO o_cvscjo9_ch = "td_"||OUT||"9_ch";    // liste prix chaînés
+         DO o_cvscjo7    = "td_"||OUT||"7";       // liste volume au prix A-1
+         DO o_cvscjo7_ch = "td_"||OUT||"7_ch";    // liste volume chaîné
+         DO o_cvscjo3    = "td_"||OUT||"3";       // liste valeur
+
+      // en brut
+         DO o_brut0     = "t_"||OUT||"0";        // liste prix A-1
+         DO o_brut7     = "t_"||OUT||"7";        // liste volume au prix A-1
+         DO o_brut7_ch  = "t_"||OUT||"7_ch";     // liste volume chaîné
+         DO o_brut3     = "t_"||OUT||"3";        // liste valeur
+         
+      // le coefficient correctif associé
+         DO liste_coef = "corr_"||OUT;
+
+         &execmd "do don_@(o_brut0)      = pxbasevolvo'f(don_@(o_brut7),don_@(o_brut3))"     ";" ;
+         &execmd "do don_@(o_cvscjo7_ch) = don_@(o_cvscjo7)/don_@(o_brut0)"                  ";" ;
+         &execmd "do don_@(o_cvscjo9_ch) = 100*don_@(o_cvscjo3)/don_@(o_cvscjo7_ch)"         ";" ;
+         &execmd "do don_@(o_cvscjo0)    = pxbasevolch'f(don_@(o_cvscjo7_ch),don_@(o_cvscjo3))"     ";" ;
+         &execmd "do don_@(liste_coef)   = don_@(o_cvscjo0)/don_@(o_brut0)" ";" ;
+						
+         
+
+
+   // ***********************************************************************************************************************
+   // *****  On endogénéise les coefficients techniques P3M (hors NRJ), P3G et P51         *****
+   // ***********************************************************************************************************************
+         
+DO don_c_p3m_dai9_ch =	don_td_p3m_dai9_ch / ((1+don_tx_vp4m_dai)*(1+don_tx_d214_dai)*(1+don_tx_temp_dai)
+						*(don_td_rntpp_dai9_ch))
+						;
+
+DO don_c_p3m_dse9_ch = don_td_p3m_dse9_ch / ((1+don_tx_vp4m_dse)*(1+don_tx_d214_dse)*(1+don_tx_temp_dse)
+						*(don_td_rntpp_dse9_ch))
+						;
+
+DO don_c_p3m_dsa9_ch = don_td_p3m_dsa9_ch / ((1+don_tx_vp4m_dsa)*(1+don_tx_d214_dsa) 
+						*(don_td_rntpp_dsa9_ch))
+						;
+
+DO don_c_p3g_dai9_ch =	don_td_p3g_dai9_ch / ((1+don_tx_vp4m_dai)*(1+don_tx_d214_dai)*(1+don_tx_temp_dai)
+						*(don_td_rntpp_dai9_ch))
+						;
+
+DO don_c_p3g_dse9_ch =	don_td_p3g_dse9_ch / ((1+don_tx_vp4m_dse)*(1+don_tx_d214_dse)*(1+don_tx_temp_dse)
+						*(don_td_rntpp_dse9_ch))
+						;						
+						
+DO don_c_p3g_dsa9_ch =	don_td_p3g_dsa9_ch / ((1+don_tx_vp4m_dsa)*(1+don_tx_d214_dsa) 
+						*(don_td_rntpp_dsa9_ch))
+						;
+						
+DO don_c_p51m_dse9_ch = don_td_p51m_dse9_ch / ((1+don_tx_vp51_dse)*(1+don_tx_d214_dse)*(1+don_tx_temp_dse)
+						*(don_td_rntpp_dse9_ch))
+						;
+
+DO  don_c_p51m_dsa9_ch = don_td_p51m_dsa9_ch/((1+don_tx_vp51_dsa)*(1+don_tx_d214_dsa) 
+						*(don_td_rntpp_dsa9_ch))
+						;
+	
+DO don_c_p51s_dai9_ch = don_td_p51s_dai9_ch/((1+don_tx_vp51_dai)*(1+don_tx_d214_dai)*(1+don_tx_temp_dai)
+						//*(don_td_rntpp_dai9_ch))
+						* (1+tx_d319_dai)*(td_p1_ycmg_dai9_ch))
+						;
+
+DO don_c_p51s_dse9_ch = don_td_p51s_dse9_ch/((1+don_tx_vp51_dse)*(1+don_tx_d214_dse)*(1+don_tx_temp_dse)
+						//*(don_td_rntpp_dse9_ch))
+						* (1+tx_d319_dse)*(td_p1_ycmg_dse9_ch))
+						;
+
+DO don_c_p51s_dsa9_ch = don_td_p51s_dsa9_ch/((1+don_tx_vp51_dsa)*(1+don_tx_d214_dsa) 
+						//*(don_td_rntpp_dsa9_ch))
+						* (1+tx_d319_dsa)*(td_p1_ycmg_dsa9_ch))
+						;
+
+// ****************************************************************
+// ***** fin de Mes1d                                           ***
+// ****************************************************************
+
+
+         
+DELACCESS all; DELSAVE; DRANGE;

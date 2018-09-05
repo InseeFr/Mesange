@@ -1,0 +1,20 @@
+﻿// Fonction qui prend en entrée les séries en volume chaîné et en valeur et retourne la série de prix de l'année précédente
+
+
+
+addfun main;
+
+
+
+procedure main(xvolch,xval)
+
+{
+	xpxbase_an = compact(xval,0,1)/compact(xvolch,0,1);
+	
+	t1 = startdate(xpxbase_an);
+	
+	xpxbase = reshape(expand(xpxbase_an,4),convert(convert(date2year(t1+1),"string")||"q1","date"));
+  
+   return(xpxbase);
+
+}

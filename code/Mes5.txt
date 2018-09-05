@@ -1,0 +1,1412 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// *************************************/
+// ***** Construction de variantes *****/
+// *************************************/
+
+
+// *******************************************************/
+// ***** Hausse du prix du pétrole de 10 $           *****/
+// *******************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+
+DO choc = 0*td_pib3;
+DO choc = choc + (IF temps80b<>VALUES(temps80b, 2015Q1) THEN 0 ELSE 10);
+DO choc = extrapsd'f(choc,(1+0.02)**(1/4),0,2015q2,2200q4);
+DO baril_us=proj_baril_us+choc;
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4; 
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/petrole.csv" vari @print_list;
+
+
+// *************************************************************/
+// ***** Dépréciation permanente de 10 % de l'euro         *****/
+// *************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+//part des importations hors zone euro dans les importations françaises : 41%
+//part des exportations hors zone euro dans les exportations françaises : 59%
+DO temp_petmc = proj_petmc*(IF temps80b < VALUES(temps80b,2015q1) THEN 1 ELSE  (1+0.1*0.41));
+DO temp_petxc = proj_petxc*(IF temps80b < VALUES(temps80b,2015q1) THEN 1 ELSE  (1+0.1*0.59));
+
+
+DO temp_usa_tc = proj_usa_tc*(IF temps80b < VALUES(temps80b,2015q1) THEN 1 ELSE 1.1);
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/change.csv" vari @print_list;
+
+
+
+// ********************************************************************************/
+// ***** Baisse des cotisations sociales employeurs de 1 % du PIB ex ante *********/
+// ********************************************************************************/
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- 1*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- 1*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;					
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+DOSAVE montant_tcse = RESHAPE (0.01*VALUES(td_pib3, 2015q1), 2015q1);
+
+DO temp_difft = montant_tcse/(proj_tc_d11_q3+proj_tc_d11_nq3);
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+DO temp_tce_q = proj_tce_q - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+DO temp_tce_nq = proj_tce_nq - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+
+DO temp_difft2 = temp_difft*smpt_sm7/w_spn;//total
+DO temp_diff2 = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft2),0*temps80b);
+DO temp_tce_q2 = proj_tce_q2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+DO temp_tce_nq2 = proj_tce_nq2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/cse.csv" vari @print_list;
+
+
+
+// **********************************************************************************************************/
+// ***** Baisse des cotisations sociales employeurs de 1 % du PIB ex ante, ciblée sur les qualifiés *********/
+// **********************************************************************************************************/
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+DOSAVE montant_tcse = RESHAPE (0.01*VALUES(td_pib3, 2015q1), 2015q1);
+
+DO temp_difft = montant_tcse/(proj_tc_d11_q3/*+proj_tc_d11_nq3*/);//total
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+DO temp_tce_q = proj_tce_q - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+
+
+DO temp_difft2 = temp_difft*smpt_sm7/w_spn;//total
+DO temp_diff2 = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft2),0*temps80b);
+DO temp_tce_q2 = proj_tce_q2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/cseQ.csv" vari @print_list;
+
+
+// **************************************************************************************************************/
+// ***** Baisse des cotisations sociales employeurs de 1 % du PIB ex ante, ciblée sur les non qualifiés *********/
+// **************************************************************************************************************/
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+DOSAVE montant_tcse = RESHAPE (0.01*VALUES(td_pib3, 2015q1), 2015q1);
+
+DO temp_difft = montant_tcse/(/*proj_tc_d11_q3+*/proj_tc_d11_nq3);//total
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+
+DO temp_tce_nq = proj_tce_nq - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+
+DO temp_difft2 = temp_difft*smpt_sm7/w_spn;//total
+DO temp_diff2 = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft2),0*temps80b);
+
+DO temp_tce_nq2 = proj_tce_nq2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/cseNQ.csv" vari @print_list;
+
+
+
+
+// *********************************************************************/
+// ***** Hausse de l'investissement public de 1 % du PIB en volume *****/
+// *********************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+// choc réparti entre DSA, DSE et DAI au prorata de leur part dans P51G : 
+DO partp51gDAI = VALUES(proj_td_p51g_dai3 /proj_td_p51g_d3,2015q1) ;
+DO partp51gDSE = VALUES(proj_td_p51g_dse3 /proj_td_p51g_d3,2015q1)  ;
+DO partp51gDSA = VALUES(proj_td_p51g_dsa3 /proj_td_p51g_d3,2015q1)  ;
+DO td_p51g_dsa7_ch=proj_td_p51g_dsa7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp51gDSA*proj_td_pib7_ch ;
+DO td_p51g_DSE7_ch=proj_td_p51g_DSE7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp51gDSE*proj_td_pib7_ch ;
+DO td_p51g_DAI7_ch=proj_td_p51g_DAI7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp51gDAI*proj_td_pib7_ch ;
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/p51g.csv" vari @print_list;
+
+
+
+
+// ************************************************************************/
+// ***** Hausse de la dépense publique d'un montant de 1 point de PIB *****/
+// ************************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS bdd id .\bdd\don2.frm   type formdata mode r; SEARCH bdd;     
+DO p3g = COMPACT((td_p3g_d3-td_p3g_dsn3),-1);
+DO p51g = COMPACT((td_p51g_d3),-1);
+DO p2g = COMPACT((td_p2e_s13e3),-1);
+DO d62hc = COMPACT(tc_d62hcho_s13e3,-1);
+DO d62cho = COMPACT((tc_d62cho_s13e3),-1);
+DO d11 = COMPACT((tc_d11_s13e3+tc_d121_s13e3),-1);
+DO dep = p3g+p51g+p2g+d62hc+d62cho+d11;
+DRANGE 2015A TO 2015A ;
+DO partp51g=p51g/dep;
+DO PRT.(partp51g);
+DO partp3g=p3g/dep;
+DO PRT.(partp3g);
+DO partd62hcho=d62hc/dep;
+DO PRT.(partd62hcho);
+DO partd62cho=d62cho/dep;
+DO PRT.(partd62cho);
+DO partd11=d11/dep;
+DO PRT.(partd11);
+DO partp2g=p2g/dep;
+DO PRT.(partp2g);*/
+
+DO temps80b =       RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+//choc d'investissement public
+DO partp51g=0.079698; 
+DO partp51gDAI = VALUES(proj_td_p51g_dai3 /proj_td_p51g_d3,2015q1) ;
+DO partp51gDSE = VALUES(proj_td_p51g_dse3 /proj_td_p51g_d3,2015q1)  ;
+DO partp51gDSA = VALUES(proj_td_p51g_dsa3 /proj_td_p51g_d3,2015q1)  ;
+DO td_p51g_dsa7_ch=proj_td_p51g_dsa7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*partp51g*0.01*partp51gDSA*proj_td_pib7_ch ;
+DO td_p51g_DSE7_ch=proj_td_p51g_DSE7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*partp51g*0.01*partp51gDSE*proj_td_pib7_ch ;
+DO td_p51g_DAI7_ch=proj_td_p51g_DAI7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*partp51g*0.01*partp51gDAI*proj_td_pib7_ch ;
+
+//choc de consommation publique hors DSN
+DO partp3g=0.087333;
+DO partp3gDAI = VALUES(proj_td_p3g_dai3 /(proj_td_p3g_dai3+proj_td_p3g_dse3+proj_td_p3g_dsa3),2015q1) ;
+DO partp3gDSE = VALUES(proj_td_p3g_dse3 /(proj_td_p3g_dai3+proj_td_p3g_dse3+proj_td_p3g_dsa3),2015q1) ;
+DO partp3gDSA = VALUES(proj_td_p3g_dsa3 /(proj_td_p3g_dai3+proj_td_p3g_dse3+proj_td_p3g_dsa3),2015q1) ;
+DO td_p3g_dsa7_ch=proj_td_p3g_dsa7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp3g*partp3gDSA*proj_td_pib7_ch ;
+DO td_p3g_DSE7_ch=proj_td_p3g_DSE7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp3g*partp3gDSE*proj_td_pib7_ch ;
+DO td_p3g_DAI7_ch=proj_td_p3g_DAI7_ch + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01*partp3g*partp3gDAI*proj_td_pib7_ch ;
+
+//choc de prestations sociales hors chômage
+DO partd62hcho=0.426978;
+DO d62hcho_cale =proj_d62hcho_cale + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (LOG(1+0.01*partd62hcho*proj_td_pib3/proj_tc_d62hcho_s13e3))) ;
+
+//choc de prestations sociales chômage
+DO partd62cho = 0.03507;
+DO temp_d62cho_cale=proj_d62cho_cale+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE LOG(1+0.01*partd62cho*proj_td_pib3/proj_tc_d62cho_s13e3));
+
+//choc de masse salariale publique (via l'emploi et les salaires)
+DO txcotiseffapu = VALUES(proj_tc_d121_s13e3/proj_tc_d11_s13e3,2015q1);
+DO partd11 = 0.252695;
+DO temp_ct_smpt_s13=proj_ct_smpt_s13 * (1+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (0.5*0.01*partd11*proj_td_pib3/(proj_tc_d11_s13e3*(1+txcotiseffapu)))));
+DO temp_emps_s131_cale = proj_emps_s131_cale + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (LOG(1+0.5*0.01*partd11*proj_td_pib3/(proj_tc_d11_s13e3*(1+txcotiseffapu))))) ;
+
+//choc de consommation intermédiaire publique
+DO partp2g = 0.118227;
+DO partp2DAI = VALUES(proj_td_p2dsn_dai3 /(proj_td_p2dsn_dai3+proj_td_p2dsn_dsa3+proj_td_p2dsn_dse3+proj_td_p2dsn_nrj3),2015q1) ;
+DO partp2DSE = VALUES(proj_td_p2dse_dai3 /(proj_td_p2dsn_dai3+proj_td_p2dsn_dsa3+proj_td_p2dsn_dse3+proj_td_p2dsn_nrj3),2015q1) ;
+DO partp2DSA = VALUES(proj_td_p2dsa_dai3 /(proj_td_p2dsn_dai3+proj_td_p2dsn_dsa3+proj_td_p2dsn_dse3+proj_td_p2dsn_nrj3),2015q1) ;
+DO partp2NRJ = VALUES(proj_td_p2nrj_dai3 /(proj_td_p2dsn_dai3+proj_td_p2dsn_dsa3+proj_td_p2dsn_dse3+proj_td_p2dsn_nrj3),2015q1) ;
+DO temp_ct_p2dsn_dai7_ch = proj_ct_p2dsn_dai7_ch * (1+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (0.01*partp2g*partp2dai*proj_td_pib7_ch/td_p1e_dsn7_ch)));
+DO temp_ct_p2dsn_dse7_ch = proj_ct_p2dsn_dse7_ch * (1+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (0.01*partp2g*partp2dse*proj_td_pib7_ch/td_p1e_dsn7_ch)));
+DO temp_ct_p2dsn_dsa7_ch = proj_ct_p2dsn_dsa7_ch * (1+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (0.01*partp2g*partp2dsa*proj_td_pib7_ch/td_p1e_dsn7_ch)));
+DO temp_ct_p2dsn_nrj7_ch = proj_ct_p2dsn_nrj7_ch * (1+(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE (0.01*partp2g*partp2nrj*proj_td_pib7_ch/td_p1e_dsn7_ch)));
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/depapu.csv" vari @print_list;
+
+
+
+
+// *******************************************************/
+// ***** Hausse permanente de l'efficience de 1 %     ****/
+// *******************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DO temps80b =  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+
+DO eff2 =proj_eff2 + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01 ;
+DO eff2_proj =proj_eff2_proj + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*0.01 ;
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+DOSAVE pvvara_defprim = COMPACT(100*(temp_defprim-proj_defprim),0);
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/efficience.csv" vari @print_list;
+
+DO pcvara_productivite_apparente_sm = COMPACT( 100*((temp_td_b1_sm3/temp_tc_emps_sm7)-(proj_td_b1_sm3/proj_tc_emps_sm7))/(proj_td_b1_sm3/proj_tc_emps_sm7),0);
+DO pcvara_productivite_apparente = COMPACT(100*((temp_td_b1_d3/temp_tc_emp_d1)-(proj_td_b1_d3/proj_tc_emp_d1))/(proj_td_b1_d3/proj_tc_emp_d1),0);
+DO PRT.(pcvara_productivite_apparente_sm);
+DO PRT.(pcvara_productivite_apparente);
+
+DO pcvara_compit_dai = COMPACT( 100*((temp_td_p7_dai9_ch/temp_td_p1_dai9_ch)-(proj_td_p7_dai9_ch/proj_td_p1_dai9_ch))/(proj_td_p7_dai9_ch/proj_td_p1_dai9_ch),0);
+DO pcvara_compit_dse = COMPACT( 100*((temp_td_p7_dse9_ch/temp_td_p1_dse9_ch)-(proj_td_p7_dse9_ch/proj_td_p1_dse9_ch))/(proj_td_p7_dse9_ch/proj_td_p1_dse9_ch),0);
+DO pcvara_compit_dai_p1mi = COMPACT( 100*((temp_td_p7_dai9_ch/temp_td_p1mi_dai9_ch)-(proj_td_p7_dai9_ch/proj_td_p1mi_dai9_ch))/(proj_td_p7_dai9_ch/proj_td_p1mi_dai9_ch),0);
+DO pcvara_compit_dse_p1mi = COMPACT( 100*((temp_td_p7_dse9_ch/temp_td_p1mi_dse9_ch)-(proj_td_p7_dse9_ch/proj_td_p1mi_dse9_ch))/(proj_td_p7_dse9_ch/proj_td_p1mi_dse9_ch),0);
+
+
+
+// ***************************************************************/
+// ***** Hausse permanente de la population active de 1 %   ******/
+// ***************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH temp;
+
+REPEQ ecm_p3m_d7_ch, ecm_p3m_d7_ch:DEL(LOG(TD_P3M_D7_CH) - P3M_D7_CH_CALE) =
+				+P3MD7CONST
+				+P3MD7RDB0*DEL(4:LOG(RDBR))
+				+P3MD7R3MR2*DEL(EUR3MR)(-2)
+			//	+P3MD7TCHO0*DEL(TCHO)
+				+P3MD7PAC1*bal
+				+P3MD7PAC2*jup
+				+P3MD7PACPOS1*balpos
+				+P3MD7PACPOS2*juppos
+				+P3MD7PAC3*fil	
+				+P3MD7MU*(LOG(TD_P3M_D7_CH) - P3M_D7_CH_CALE - LOG(RDBR))(-1)
+				+P3MD7MULIBFIN * T93Q1(-1);
+
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+DELSEARCH temp2;
+DELACCESS temp2;
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+DO popact =proj_popact + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*proj_popact*0.01 ;
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous"));
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+DOSAVE pvvara_defprim = COMPACT(100*(temp_defprim-proj_defprim),0);
+DO PRT.(VALUES(pcvar_td_pib7_ch, 2015q1::2030q1));      
+      
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/popact.csv" vari @print_list;
+
+
+
+
+// *********************************************************************************/
+// ***** Hausse permanente de 1 % de la demande mondiale adressée à la France   ****/
+// *********************************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH temp;
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+DO demmon=proj_demmon + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1)*proj_demmon*0.01 ;
+
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous"));
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+DOSAVE pvvara_defprim = COMPACT(100*(temp_defprim-proj_defprim),0);
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/demmon.csv" vari @print_list;
+
+DOSAVE vvar_pbbalcom =100*(((temp_td_p6_d3-temp_td_p7_d3)/temp_td_pib3)-((proj_td_p6_d3-proj_td_p7_d3)/proj_td_pib3));
+DO PRT.(vvar_pbbalcom);
+
+DELACCESS all; DELSAVE all; DRANGE;
+
+
+
+
+// *****************************************************/
+// ***** Hausse de la TVA de 1 % du PIB ex ante   ******/
+// *****************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+ 
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+DO temps80b =  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+ 
+// La TVA versée par les APU est 14,5% du total. 
+// On corrige cet effet pour avoir une variante qui a une ampleur de 1% de pib sur l'économie marchande
+DO tx_apu = 0.145/(1-0.0145)+1;
+DO PRT. (tx_apu) ;
+ 
+DOSAVE montant_tva = RESHAPE (0.01*tx_apu*VALUES(td_pib3, 2015q1), 2015q1);
+
+DO temp_difft = montant_tva/(
+ (td_p2_dai3-td_vp2_dai3    )*tx_vp2_dai 
++(td_p2_dsa3-td_vp2_dsa3    )*tx_vp2_dsa 
++(td_p2_dse3-td_vp2_dse3    )*tx_vp2_dse 
++(td_p2_dsn3-td_vp2_dsn3    )*tx_vp2_dsn 
++(td_p2_nrj3-td_vp2_nrj3    )*tx_vp2_nrj 
++(td_p4m_dai3-td_vp4m_dai3  )*tx_vp4m_dai
++(td_p4m_dsa3-td_vp4m_dsa3  )*tx_vp4m_dsa
++(td_p4m_dse3-td_vp4m_dse3  )*tx_vp4m_dse
++(td_p4m_dsn3-td_vp4m_dsn3  )*tx_vp4m_dsn
++(td_p4m_nrj3-td_vp4m_nrj3  )*tx_vp4m_nrj
++(td_p51_dai3-td_vp51_dai3   )*tx_vp51_dai  
++(td_p51_dsa3-td_vp51_dsa3   )*tx_vp51_dsa
++(td_p51_dse3-td_vp51_dse3   )*tx_vp51_dse
+);        
+
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+
+DOSAVE ttvapart = C.(
+"tx_vp2_dai" , "tx_vp2_dsa" , "tx_vp2_dse" , "tx_vp2_dsn" , "tx_vp2_nrj" ,
+"tx_vp4m_dai", "tx_vp4m_dsa", "tx_vp4m_dse", "tx_vp4m_dsn", "tx_vp4m_nrj",
+"tx_vp51_dai", "tx_vp51_dsa", "tx_vp51_dse"
+);
+
+USEMOD mesange2L;
+CHANGESYM exogenous
+tx_vp2_dai  tx_vp2_dsa  tx_vp2_dse  tx_vp2_dsn  tx_vp2_nrj 
+tx_vp4m_dai tx_vp4m_dsa tx_vp4m_dse tx_vp4m_dsn tx_vp4m_nrj
+tx_vp51_dai tx_vp51_dsa tx_vp51_dse;
+DELEQ 
+tx_vp2dai  tx_vp2dsa  tx_vp2dse  tx_vp2dsn  tx_vp2nrj 
+tx_vp4mdai tx_vp4mdsa tx_vp4mdse tx_vp4mdsn tx_vp4mnrj
+tx_vp51dai tx_vp51dsa tx_vp51dse;
+
+REPEQ td_vp2_dai3,
+td_vp2_dai3: td_vp2_dai3 = tx_vp2_dai/(1+tx_vp2_dai)*td_p2_dai3;
+REPEQ td_vp2_dsa3,
+td_vp2_dsa3: td_vp2_dsa3 = tx_vp2_dsa/(1+tx_vp2_dsa)*td_p2_dsa3;
+REPEQ td_vp2_dse3,
+td_vp2_dse3: td_vp2_dse3 = tx_vp2_dse/(1+tx_vp2_dse)*td_p2_dse3;
+REPEQ td_vp2_dsn3,
+td_vp2_dsn3: td_vp2_dsn3 = tx_vp2_dsn/(1+tx_vp2_dsn)*td_p2_dsn3;
+REPEQ td_vp2_nrj3,
+td_vp2_nrj3: td_vp2_nrj3 = tx_vp2_nrj/(1+tx_vp2_nrj)*td_p2_nrj3;
+REPEQ td_vp4m_dai3,
+td_vp4m_dai3: td_vp4m_dai3 = tx_vp4m_dai/(1+tx_vp4m_dai)*td_p4m_dai3;
+REPEQ td_vp4m_dsa3,
+td_vp4m_dsa3: td_vp4m_dsa3 = tx_vp4m_dsa/(1+tx_vp4m_dsa)*td_p4m_dsa3;
+REPEQ td_vp4m_dse3,
+td_vp4m_dse3: td_vp4m_dse3 = tx_vp4m_dse/(1+tx_vp4m_dse)*td_p4m_dse3;
+REPEQ td_vp4m_dsn3,
+td_vp4m_dsn3: td_vp4m_dsn3 = tx_vp4m_dsn/(1+tx_vp4m_dsn)*td_p4m_dsn3;
+REPEQ td_vp4m_nrj3,
+td_vp4m_nrj3: td_vp4m_nrj3 = tx_vp4m_nrj/(1+tx_vp4m_nrj)*td_p4m_nrj3;
+REPEQ td_vp51_dai3,
+td_vp51_dai3: td_vp51_dai3 = tx_vp51_dai/(1+tx_vp51_dai)*td_p51_dai3;
+REPEQ td_vp51_dsa3,
+td_vp51_dsa3: td_vp51_dsa3 = tx_vp51_dsa/(1+tx_vp51_dsa)*td_p51_dsa3;
+REPEQ td_vp51_dse3,
+td_vp51_dse3: td_vp51_dse3 = tx_vp51_dse/(1+tx_vp51_dse)*td_p51_dse3;
+FILEMOD mesange2Lv2;
+
+&execmd "do @(ttvapart) = proj_@(ttvapart)*(1+temp_diff)" ";" ;
+
+USEMOD mesange2Lv2;
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/tva.csv" vari @print_list;
+
+
+// *****************************************************************************/
+// ***** Baisse des cotisations sociales salariés de 1 % du PIB ex ante    *****/
+// *****************************************************************************/
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+DOSAVE montant_tcss = RESHAPE (0.01*VALUES(td_pib3, 2015q1), 2015q1);
+
+DO temp_difft = montant_tcss/(proj_tc_d11_q3+proj_tc_d11_nq3);//total
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+DO temp_tcs_q = proj_tcs_q - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+DO temp_tcs_nq = proj_tcs_nq - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+
+DO temp_difft2 = temp_difft*smpt_sm7/w_spn;//total
+DO temp_diff2 = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft2),0*temps80b);
+DO temp_tcs_q2 = proj_tcs_q2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+DO temp_tcs_nq2 = proj_tcs_nq2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/CSS.csv" vari @print_list;
+
+
+
+
+// **********************************************************************************/
+// ***** Baisse de la contribution sociale généralisée de 1 % du PIB ex ante    *****/
+// **********************************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+
+DOSAVE montant_csg = RESHAPE (0.01*VALUES(td_pib3, 2015q1), 2015q1);
+DO temp_difft = montant_csg/(tc_d11_s14r3+tc_d621_s14r3+0.80*tc_d622_s14r3+tc_d41_s14r3+tc_d42_s14r3+tc_d4z_s14s3);//total
+DO temp_diff = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft),0*temps80b);
+DO temp_tcsg_trav = proj_tcsg_trav - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+DO temp_tcsg_cap  = proj_tcsg_cap  - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff);
+
+DO temp_difft2 = temp_difft*smpt_sm7/w_spn ;
+DO temp_diff2 = OVERLAY(CRSERIES(2015q1::2200q4, temp_difft2),0*temps80b);
+DO temp_csgcrds2 = proj_csgcrds2 - 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE temp_diff2);
+
+&lklimit;
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4; 
+FILESIM temp;
+
+// vérification comptable sur le choc : 
+DO prt.((temp_tc_d51csg_cap_s14e3+tc_d51csg_trav_s14e3 - proj_tc_d51csg_cap_s14e3 - proj_tc_d51csg_trav_s14e3)/proj_td_pib3) ;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/CSG.csv" vari @print_list;
+
+
+// *********************************************************************************/
+// ***** Baisse de l'impôt sur le revenu des ménages de 1 % du PIB ex ante     *****/
+// *********************************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+ACCESS outils id .\outils; SEARCH outils ; 
+
+DO proj_wq_spn= (smpt_q7)*(1-tcs_q-csgcrds)*(1-tir_smooth);
+DO proj_tce_q2 = tce_q*smpt_q7/wq_spn;
+DO proj_tcs_q2 = tcs_q*smpt_q7/wq_spn;
+
+DO proj_wnq_spn= (smpt_nq7)*(1-tcs_nq-csgcrds)*(1-tir_smooth);
+DO proj_tce_nq2 = tce_nq*smpt_nq7/wnq_spn;
+DO proj_tcs_nq2 = tcs_nq*smpt_nq7/wnq_spn;
+
+DO proj_w_net= (smpt_sm7)*(1-tcs-csgcrds);
+DO proj_w_spn= (smpt_sm7)*(1-tcs-csgcrds)*(1-tir_smooth);
+DO proj_csgcrds2 = csgcrds*smpt_sm7/w_spn;
+DO proj_tir_smooth2 = tir_smooth*proj_w_net/w_spn;
+
+DO l_2015_last=C.("tce_q2","tce_nq2","tcs_q2","tcs_nq2","tir_smooth2","csgcrds2");
+&execmd "do proj_@(l_2015_last) = extrapsd'f(proj_@(l_2015_last),1,0,2015q1,2200q4)" ";";
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+REPEQ ecm_wnq,
+ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1
+     + wnqar1*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1-wnqipc0-wnqipc1)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0*DEL(LOG(ipc))(-0)
+     + wnqipc1*DEL(LOG(ipc))(-1)
+     + wnqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0*DEL(tcho)
+     + wnqcp*DEL(LOG(smic_cvs_cp))
+     + wnqmu * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_nq2+tcs_nq2+csgcrds2+tir_smooth2)
+					)(-1)
+					+ wnqlttend*temps76(-1)
+     				+ wnqltsup09*sup09q1(-1)
+				    + wnqltcho* tcho(-3) 
+				;
+REPEQ ecm_wq,
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1
+     + wqar1*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1-wqipc0-wqipc1)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0*DEL(LOG(ipc))(-0)
+     + wqipc1*DEL(LOG(ipc))(-1)
+     + wqdcho0*DEL(tcho)
+     + wqprod0*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp*DEL(LOG(smic_cvs_cp))
+     + wqmu * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- (1)*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					- 1*LOG(1+tce_q2+tcs_q2+csgcrds2+tir_smooth2)
+ 					)(-1)
+     				+ wqltsup09*sup09q1(-1)
+				    + wqltcho* tcho(-3),
+					;
+FILEMOD mesange2Lfiscal;
+
+//////////////////////////////////////////////////
+// 	Inversion
+//////////////////////////////////////////////////
+
+USEMOD mesange2Lfiscal;
+
+&execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+&execmd "changesym endogenous @(liste_pol) ;";	
+
+FILEMOD modtempj;
+USEMOD modtempj;
+ACCESS temp2 type memdb mode c;
+SEARCH temp2;
+
+&lklimit;
+SIMULATE;
+CONOPT concr 0.000000001;
+SIMSTART 1992q1 from 1980q1;
+DOTIL 2200Q4;
+FILESIM temp2;
+&execmd " do temp_@(liste_pol) = temp2_@(liste_pol)" ";" ;
+
+DO check2'f(liste_pol,0.00000001,"proj","temp2") ;
+
+DELSEARCH temp2;
+DELACCESS temp2;
+
+
+// Choc 
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+
+USEMOD mesange2Lfiscal;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode w; SEARCH first temp;
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+
+// Choc dans le CFS (y compris coefficient correcteur)
+DO tir_ante = tc_d51ir_s14e3/ tc_assiette_IR ;
+DO tir_post = (tc_d51ir_s14e3-0.01*td_pib3)/ tc_assiette_IR ;
+
+DO diff_tir2 = (tir_post - tir_ante)*proj_w_net/w_spn;
+DO temp_tir_smooth2 = proj_tir_smooth2 + 1*(IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE diff_tir2);  
+
+// Choc de RDB des ménages et le solde des APU
+DO temp_d51ir_s14e3_cale = proj_d51ir_s14e3_cale + (IF temps80b < VALUES(temps80b,2015q1) THEN 0 ELSE (LOG(1-0.01*td_pib3/tc_d51ir_s14e3)));
+
+FILEMOD mesange2Lfiscal;
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+// vérification comptable sur l'IR :
+DO prt.((temp_tc_d51ir_s14e3 - proj_tc_d51ir_s14e3)/proj_td_pib3) ;
+// vérification sur choc du CFS :
+DO prt.(temp_tir_smooth2 - proj_tir_smooth2);
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/IR.csv" vari @print_list;
+
+
+
+
+// ***********************************************************/
+// ***** Hausse de la taxe carbone de 1 pt de PIB        *****/
+// ***********************************************************/
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode w; SEARCH proj;
+DO proj_diff_txnrjs_essai = 0*td_pib3;
+
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD mesange2L;
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH first temp;
+
+DO temps80b = 	  RESHAPE(SEQ(343+NOB(td_pib3)),1980q1), PRT.(temps80b); 
+
+REPEQ ec_d214_nrj3, ec_d214_nrj3: td_d214_nrj3 = td_d214_nrj7_ch*(td_d214_nrj9_ch/100+diff_txnrjs_essai);
+
+REPEQ td_p2dhnrj_nrj9_ch, td_p2dhnrj_nrj9_ch: td_p2dhnrj_nrj9_ch/(1+tx_vp2_nrj)/(1+tx_mp2_nrj)-
+                td_d214_nrj7_ch/(td_p2_nrj7_ch+td_p3m_nrj7_ch)*(td_d214_nrj9_ch+diff_txnrjs_essai*100)
+                 = ct_p2dhnrj_nrj9_ch*(1+tx_temp_nrj)*(0.224*td_p7_nrj7_ch/(
+                td_p7_nrj7_ch+td_p1_nrj7_ch)/part_p7nrj_2014q4*td_p7_nrj9_ch*(1+
+                tx_d212_nrj)+(1-0.224*td_p7_nrj7_ch/(td_p7_nrj7_ch+td_p1_nrj7_ch
+                )/part_p7nrj_2014q4)*td_p1_nrj9_ch*(1+tx_d319_nrj));
+ 
+REPEQ td_p3m_nrj9_ch, td_p3m_nrj9_ch: td_p3m_nrj9_ch/(1+tx_vp4m_nrj)/(1+tx_mp3m_nrj)-
+                td_d214_nrj7_ch/(td_p2_nrj7_ch+td_p3m_nrj7_ch)*(td_d214_nrj9_ch+diff_txnrjs_essai*100)
+                 = ct_p3m_nrj9_ch*(0.177*td_p7_nrj7_ch/(td_p7_nrj7_ch+
+                td_p1_nrj7_ch)/part_p7nrj_2014q4*td_p7_nrj9_ch*(1+tx_d212_nrj)+(
+                1-0.177*td_p7_nrj7_ch/(td_p7_nrj7_ch+td_p1_nrj7_ch)/
+                part_p7nrj_2014q4)*td_p1_nrj9_ch*(1+tx_d319_nrj));
+
+FILEMOD mesange2Lbis;
+// Calcul du nouveau taux de taxation de l'énergie
+DOSAVE montant_txnrjs = td_pib3*(0.01);
+DO diff_txnrjs=0*montant_txnrjs;
+
+USEMOD ;
+ADDSYM endogenous diff_txnrjs;
+ADDEQ bottom 
+td_d214_nrj3+montant_txnrjs=(TD_D214_nrj9_ch/100+diff_txnrjs)*td_d214_nrj7_ch ;
+FILEMOD modtaux2;
+
+USEMOD modtaux2;
+SIMULATE;
+SIMSTART 2015q1;
+DOTIL 2200q4;
+FILESIM temp : endogenous;
+
+
+DO temp_diff_txnrjs_essai = OVERLAY(diff_txnrjs,
+ 	CRSERIES(ENDDATE(montant_txnrjs)::2200q4, VALUES(diff_txnrjs, ENDDATE(montant_txnrjs))),0*temps80b);
+USEMOD mesange2Lbis;
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/TC.csv" vari @print_list;
+
+DO PRT.(pcvara_td_p2_nrj7_ch);
+DO PRT.(pcvara_td_p3m_nrj7_ch);
+
+
+
+
+
+// ************************************************************************/
+// ***** Hausse permanente des taux d'intérêt de 100 points de base    ****/
+// ************************************************************************/
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS outils id .\outils; SEARCH outils ; 
+ACCESS coefmod type formdata id .\BDD\mesangecoef2Lb.frm mode r ; SEARCH coefmod ; 
+ACCESS proj id .\BDD\projCC2Lb.frm   type formdata mode r; SEARCH proj;
+USEMOD Mesange2L;
+
+ACCESS temp id .\BDD\tempvarb.frm   type formdata mode c; SEARCH temp;
+DO temps80b =     RESHAPE(SEQ(343+NOB(td_pib3)),1980q1); 
+
+DO oat10ar = proj_oat10ar + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1);
+DO eur3mr = proj_eur3mr + (IF temps80b<VALUES(temps80b,2015q1) THEN 0 ELSE 1);
+
+
+SIMULATE; SIMSTART 2013q1; DOTIL 2200q4;
+FILESIM temp;
+
+DOSAVE varia=C.(MODSYM("endogenous"),MODSYM("exogenous"));
+DOSAVE endo = C.(MODSYM("endogenous")); 
+
+&execmd "dosave pcvar_@(varia) = 100 * (temp_@(varia)/proj_@(varia)-1) ;" ;
+&execmd "dosave vvar_@(varia) = (temp_@(varia)-proj_@(varia)) ;" ;
+&execmd "dosave pcvarA_@(endo) = compact(pcvar_@(endo),0) ;" ;
+&execmd "dosave vvarA_@(endo) = compact(vvar_@(endo),0) ;" ;
+
+INPUT QUITError ./code/Resultvar2L.inp ;
+&ts2tbl file "./sorties/tauxlongcourt.csv" vari @print_list;
+
+
+
+
+
+/**********************************************************/
+/********		 Fin de Mes5		***********/
+/**********************************************************/

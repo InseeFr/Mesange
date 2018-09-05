@@ -1,0 +1,269 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// *******************************************************************************
+// ***** 2.b- estimations : équations estimées en 2 étapes ou instrumentées   ****
+// *******************************************************************************
+
+// Input : -fichier enrichi des données extérieures      don2b.frm
+// 			- fichier avec les premiers coefficients estimés créé dans mes2 quand on estime l'efficience
+
+// output : ce fichier de coefficients étoffé
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS out id .\BDD\don2.frm  type formdata mode r; SEARCH out;
+ACCESS coefmod type formdata id .\BDD\mesangecoefhorsML.frm mode w ; SEARCH coefmod w ;
+
+/////////////////////////////////////////////////////////////
+// long terme exportations DAI pour estimation en 2 étapes //
+////////////////////////////////////////////////////////////
+DO cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p6_dai7_ch , policy cale ; 
+	ADDEQ bottom,
+LTDAI : LOG(td_p6_dai7_ch)-cale  =
+                  p6dai7_cst'c
+                + 1 * LOG(demmon)
+               + p6dai7_compet'c * (LOG(petxc) - LOG(td_p1_dai9_ch))
+                + p6dai7_pdm'c * LOG(pdm_vol)
+                + p6_1'c * DEL(LOG(petxc/td_p1_dai9_ch))(-0)
+                + p6_2'c * DEL(LOG(petxc/td_p1_dai9_ch))(-1)
+                + p6_3'c * DEL(LOG(petxc/td_p1_dai9_ch))(-2)
+                + p6_4'c * DEL(LOG(petxc/td_p1_dai9_ch))(+1)
+                + p6_5'c * DEL(LOG(petxc/td_p1_dai9_ch))(+2)
+                + p6_6'c * DEL(LOG(pdm_vol))(-0)
+                + p6_7'c * DEL(LOG(pdm_vol))(-1)
+                + p6_8'c * DEL(LOG(pdm_vol))(-2)
+                + p6_9'c * DEL(LOG(pdm_vol))(+1)
+                + p6_10'c * DEL(LOG(pdm_vol))(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1992Q1 TO 2014Q4; OLSMOD LTDAI;
+	SAVECOEF coefmod; 
+
+// long terme exportations DSE pour estimation en 2 étapes
+DO cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p6_DSE7_ch , policy cale;
+	ADDEQ bottom,
+LTDSE : LOG(td_p6_DSE7_ch)-cale  =
+                  p6DSE7_cst'c
+                + 1 * LOG(demmon)
+                + p6DSE7_compet'c * (LOG(petxc)- LOG(td_p1_dse9_ch))
+                + p6DSE7_trend'c * temps80
+                + p6DSE7_trend2'c * temps10
+                + p6_1'c * DEL(LOG(petxc/td_p1_dse9_ch))(-0)
+                + p6_2'c * DEL(LOG(petxc/td_p1_dse9_ch))(-1)
+                + p6_3'c * DEL(LOG(petxc/td_p1_dse9_ch))(-2)
+                + p6_4'c * DEL(LOG(petxc/td_p1_dse9_ch))(+1)
+                + p6_5'c * DEL(LOG(petxc/td_p1_dse9_ch))(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1992Q1 TO 2014Q4; OLSMOD LTDSE;
+	SAVECOEF coefmod; 
+	
+		
+	
+/////////////////////////////////////////////////////////////
+// long terme importations DAI pour estimation en 2 étapes //
+////////////////////////////////////////////////////////////
+
+DO cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p7_dai7_ch , policy cale ; 
+	ADDEQ bottom,
+LTDAIbis : LOG(td_p7_dai7_ch)-cale  =
+                  p7dai7_cst'c
+                + 1 * LOG(td_dint_dai7_ch)
+               + p7dai7_compet'c * (LOG(petmc)- LOG(td_p1_dai9_ch))
+                + p7dai7_pdm'c * LOG(ouv)
+                + p7_1'c * DEL(LOG(petmc/td_p1_dai9_ch))(-0)
+                + p7_2'c * DEL(LOG(petmc/td_p1_dai9_ch))(-1)
+                + p7_3'c * DEL(LOG(petmc/td_p1_dai9_ch))(-2)
+                + p7_4'c * DEL(LOG(petmc/td_p1_dai9_ch))(+1)
+                + p7_5'c * DEL(LOG(petmc/td_p1_dai9_ch))(+2)
+                + p7_6'c * DEL(LOG(ouv))(-0)
+                + p7_7'c * DEL(LOG(ouv))(-1)
+                + p7_8'c * DEL(LOG(ouv))(-2)
+                + p7_9'c * DEL(LOG(ouv))(+1)
+                + p7_10'c * DEL(LOG(ouv))(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1984Q1 TO 2014Q4; OLSMOD LTDAIbis;
+	SAVECOEF coefmod; 
+	
+	
+/////////////////////////////////////////////////////////////
+// long terme importations DSE pour estimation en 2 étapes //
+////////////////////////////////////////////////////////////
+
+DO cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p7_dse7_ch , policy cale ; 
+	ADDEQ bottom,
+LTDSEbis : LOG(td_p7_dse7_ch)-cale  =
+                  p7dse7_cst'c
+                + 1 * LOG(td_dint_dse7_ch)
+                + p7dse7_compet'c * (LOG(petmc)- LOG(td_p1_dse9_ch))
+                + p7dse7_pdm'c * LOG(ouv)
+                + p7dse7temps09'c*temps09(-8)
+                + p7_1'c * DEL(LOG(petmc/td_p1_dse9_ch))(-0)
+                + p7_2'c * DEL(LOG(petmc/td_p1_dse9_ch))(-1)
+                + p7_3'c * DEL(LOG(petmc/td_p1_dse9_ch))(-2)
+                + p7_4'c * DEL(LOG(petmc/td_p1_dse9_ch))(+1)
+                + p7_5'c * DEL(LOG(petmc/td_p1_dse9_ch))(+2)
+                + p7_6'c * DEL(LOG(ouv))(-0)
+                + p7_7'c * DEL(LOG(ouv))(-1)
+                + p7_8'c * DEL(LOG(ouv))(-2)
+                + p7_9'c * DEL(LOG(ouv))(+1)
+                + p7_10'c * DEL(LOG(ouv))(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1987Q1 TO 2014Q4; OLSMOD LTDSEbis;
+	SAVECOEF coefmod; 
+
+	
+	
+	
+	
+// long terme consommation d'énergie des ménages
+DO td_p3m_nrj7_ch_lt_cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p3m_nrj7_ch , policy td_p3m_nrj7_ch_lt_cale ;
+	ADDEQ bottom,
+LTp3mnrj :LOG(td_p3m_nrj7_ch) - td_p3m_nrj7_ch_lt_cale - LOG(TD_B6_s143/td_p3m_d9_ch)= 
+ 		  p3mnrj7lt0'c
+ 		  + p3mnrj7ltprix'c * (LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch))
+ 	      + p3mnrj7lttrend'c*trend_pib_par_tete
+ 		  + p3mnrjlt1'c * DEL((LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch)))(0)
+ 		  + p3mnrjlt2'c * DEL((LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch)))(-1)
+ 		  + p3mnrjlt3'c * DEL((LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch)))(-2)
+ 		  + p3mnrjlt4'c * DEL((LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch)))(+1)
+ 		  + p3mnrjlt5'c * DEL((LOG(TD_p3m_nrj9_ch/TD_p3m_D9_ch)))(+2)
+ 		  + p3mnrjlt6'c*DEL(trend_pib_par_tete)(0)
+ 		  + p3mnrjlt7'c*DEL(trend_pib_par_tete)(-1)
+ 		  + p3mnrjlt8'c*DEL(trend_pib_par_tete)(-2)
+ 		  + p3mnrjlt9'c*DEL(trend_pib_par_tete)(+1)
+ 		  + p3mnrjlt10'c*DEL(trend_pib_par_tete)(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1986Q1 TO 2014Q4; OLSMOD LTp3mnrj;
+	SAVECOEF coefmod; 
+
+DO PRT.(p3mnrj7ltprix) ;
+
+// long terme CI en NRJ des entreprises (hors branche NRJ)
+DO td_p2dhnrj_nrj7_ch_cale = 0*td_pib3 ; 
+USEMOD;
+	ADDSYM endogenous td_p2dhnrj_nrj7_ch , policy td_p2dhnrj_nrj7_ch_cale ;
+	ADDEQ bottom,
+LTCInrj : LOG(td_p2dhnrj_nrj7_ch)-td_p2dhnrj_nrj7_ch_cale =
+           cst'c
+          +LOG(td_p1e_dhnrj7_ch)
+ 		  + p2dhnrj7_muprix'c* LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch)
+ 		  + p2dhnrj7_muind'c * LOG(struct_prod) 
+ 		  + cinrj1'c*DEL(LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch))(-0)
+ 		  + cinrj2'c*DEL(LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch))(-1)
+ 		  + cinrj3'c*DEL(LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch))(-2)
+ 		  + cinrj4'c*DEL(LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch))(+1)
+ 		  + cinrj5'c*DEL(LOG(TD_P2dhnrj_nrj9_ch/TD_p2e_Dhnrj9_ch))(+2)
+ 		  + cinrj6'c*DEL(LOG(struct_prod))(-0)
+ 		  + cinrj7'c*DEL(LOG(struct_prod))(-1)
+ 		  + cinrj8'c*DEL(LOG(struct_prod))(-2)
+ 		  + cinrj9'c*DEL(LOG(struct_prod))(+1)
+ 		  + cinrj10'c*DEL(LOG(struct_prod))(+2)
+                ;
+	FILEMOD est;  
+	USEMOD est; &lklimit; 
+	BOUNDS 1990Q1 TO 2014Q4; OLSMOD LTCInrj;
+	SAVECOEF coefmod; 
+
+DO PRT.(p2dhnrj7_muprix);
+
+
+
+// volume d'investissement des entreprises 
+
+DELACCESS all; DELSAVE all; DRANGE;
+ACCESS out id .\BDD\don2.frm  type formdata mode r; SEARCH out;
+ACCESS coefmod type formdata id .\BDD\mesangecoefhorsML.frm mode w ; SEARCH coefmod w ;
+
+USEMOD;
+ADDSYM      endogenous td_p51s_d7_ch td_b1_sm7_ch, 
+            exogenous p51s_d7_ch_cale, 'c ; 
+ADDEQ bottom,
+            ecm_p51s_d7_ch : DEL(1:LOG(td_p51s_d7_ch)-p51s_d7_ch_cale) = 
+                  cstinv'c
+                  +invar2'c*DEL(1:LOG(td_p51s_d7_ch)-p51s_d7_ch_cale)(-2)
+                  +invva0'c*DEL(1:LOG(td_b1_sm7_ch))(-0)
+                  +invva1'c*DEL(1:LOG(td_b1_sm7_ch))(-1)
+                  +muinv'c*(
+                        LOG(td_p51s_d7_ch)-p51s_d7_ch_cale 
+                -LOG(td_b1_sm7_ch)
+                + (muempsltcwr/muemps) * LOG(ck/td_b1_sm9_ch)
+                )(-1)
+                + muinvltind1'c * tempsw1(-1)
+            ;
+FILEMOD courtterme ; DOSAVE p51s_d7_ch_cale = 0*td_pib3; 
+USEMOD courtterme ; &lklimit; 
+BOUNDS 1984q4 TO 2014q4;
+CRPREG  CONST "DEL(LOG(td_p3m_d7_ch))" "DEL(LOG(td_p3g_d7_ch))" "DEL(LOG(td_p6_d7_ch))" "DEL(LOG(td_p51g_d7_ch))" ; 
+TSLSMOD 1; 
+SAVECOEF coefmod ; SEARCH save_coef; SAVERESULT FIT EQFIT, RES EQRES;
+SAVERESULT FIT EQFIT, RES EQRES; CHANGESYM exogenous td_b1_sm7_ch; FILEMOD courtterme;
+
+//////////////////////////////////////////////////////////////
+// 3. estimation des équations IR et IS en annuel			// 
+//////////////////////////////////////////////////////////////
+
+// Les deux équations sont estimées en annuel
+
+
+DOSAVE base_A = COMPACT(base_ir,-1);
+DOSAVE IR_A = COMPACT(tc_d51ir_s14e3,-1);
+DOSAVE IPC_A = COMPACT(td_p3m_d9_ch,0);
+DOSAVE PIB_A = COMPACT(td_pib3,-1);
+DOSAVE temps80_A = RESHAPE(SEQ(343+NOB(base_A)),1980A), PRT.(temps80_A);
+
+
+
+// équation IR :
+USEMOD ; ADDSYM endogenous re_ir, exogenous ir_cale, 'c ; ADDEQ bottom,
+ecm_d51ir_s14e3  : 	DEL(LOG(re_ir)-ir_cale) = 
+					   d51irc'c
+					   + d51irbase'c * DEL(LOG(base_A/IPC_A))(-1)
+					   + 1 * DEL(LOG(IPC_A))(-1)
+					   + d51irmu'c * (LOG(re_ir)-ir_cale-LOG(base_A(-1)))(-1)
+					   + d51mu2'c * temps80_A (-1)
+					  	   ;
+FILEMOD m1; DOSAVE ir_cale = 0*re_ir; 
+USEMOD m1; &lklimit; 
+BOUNDS 1985A TO 2014A; OLSMOD 1; 
+SAVECOEF coefmod; SEARCH save_coef ;  
+
+// équation IS :
+DOSAVE EBE_A = COMPACT(td_b2_s113,-1);
+DOSAVE ind05 = (IF (temps80_A < VALUES(temps80_A,2005A)) THEN 0 ELSE 1) ; 
+
+ USEMOD ; ADDSYM endogenous re_is, exogenous is_cale, 'c ; ADDEQ bottom,
+  ecm_d51_s11e3  : 	DEL(LOG(re_is)-is_cale) = 
+    						   d51isc'c
+    						   + d51is0'c * DEL(LOG(ebe_A))(0) * ind05 (0)
+    						   + d51is1'c * DEL(LOG(ebe_A))(-1)  * (1-ind05) (0)
+    						   + d51ismu'c * (LOG(re_is)-is_cale-LOG(EBE_A(-1)))(-1)
+    						   + d51ismu2'c * temps80_A (-1);
+  FILEMOD m1; DOSAVE is_cale = 0*re_is; 
+  USEMOD m1; &lklimit; 
+  BOUNDS 1985A TO 2014A; OLSMOD 1; 
+  SAVECOEF coefmod; SEARCH save_coef; 
+DELACCESS all; DELSAVE all; DRANGE;
+
+		
+
+// ***********************************************************************************************************************
+// Fin du programme Mes2b
+// ***********************************************************************************************************************

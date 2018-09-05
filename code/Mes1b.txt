@@ -1,0 +1,237 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ***********************************************************************************************************************
+// ***** Construction du TEI                                                                                         *****
+// ***********************************************************************************************************************
+   // Initialisation et importation de la boîte à outils
+      DELACCESS all; DELSAVE; DRANGE;
+      ACCESS outils id .\outils; SEARCH outils ; 
+
+   // Importation des données des comptes trimestriels
+      ACCESS don0 id .\BDD\don1a.frm    type formdata mode r; SEARCH don0;
+      ACCESS don  id .\BDD\don1b.frm    type formdata mode c; SEARCH don;
+      DO DFDELETE("don",">");
+      DO DFCOPY'F ("don0","don");
+      DELSEARCH don0; DELACCESS don0;
+
+   // 1.- Création des blocs td_p2bbb_ppp3 td_p2bbb_ppp1 où bbb représente la branche et ppp le produit 
+      // 1.a Somme sur la dimension branche - "en colonne"
+         DO a17=C.("az" ,"de" ,"c1" ,"c2" ,"c3" ,"c4" ,"c5" ,"fz" ,"gz" ,"hz" ,"iz" ,"jz" ,"kz" ,"lz" ,"mn" ,"oq" ,"ru");
+         DO lis1=C.(a17||"3",a17||"1"), PRT.(lis1);
+         &execmd "do don_td_p2dai_@(lis1) = don_TD_P2A17az_@(lis1)+don_TD_P2A17c1_@(lis1)+don_TD_P2A17c3_@(lis1)+don_TD_P2A17c4_@(lis1)+don_TD_P2A17c5_@(lis1)" ";"; // agriculture+industrie
+         &execmd "do don_td_p2nrj_@(lis1) = don_TD_P2A17de_@(lis1)+don_TD_P2A17c2_@(lis1)"                                                                             ";"; // énergie
+         &execmd "do don_td_p2dse_@(lis1) = don_TD_P2A17hz_@(lis1)+don_TD_P2A17jz_@(lis1)+don_TD_P2A17kz_@(lis1)+don_TD_P2A17mn_@(lis1)"                               ";"; // services exposés
+         &execmd "do don_td_p2dsa_@(lis1) = don_TD_P2A17fz_@(lis1)+don_TD_P2A17gz_@(lis1)+don_TD_P2A17iz_@(lis1)+don_TD_P2A17lz_@(lis1)+don_TD_P2A17ru_@(lis1)"        ";"; // services abrités
+         &execmd "do don_td_p2dsn_@(lis1) = don_TD_P2A17oq_@(lis1)"                                                                                                    ";"; // services non marchands
+
+      // 1.b Somme sur la dimension produit - "en ligne"
+         DO lis2=C.("dai" ,"nrj" ,"dse" ,"dsa" ,"dsn");
+         &execmd "do don_td_p2@(lis2)_dai3 = don_TD_P2@(lis2)_az3+don_TD_P2@(lis2)_c13+don_TD_P2@(lis2)_c33+don_TD_P2@(lis2)_c43+don_TD_P2@(lis2)_c53" ";"; // agriculture+industrie
+         &execmd "do don_td_p2@(lis2)_nrj3 = don_TD_P2@(lis2)_de3+don_TD_P2@(lis2)_c23"                                                                ";"; // énergie
+         &execmd "do don_td_p2@(lis2)_dse3 = don_TD_P2@(lis2)_hz3+don_TD_P2@(lis2)_jz3+don_TD_P2@(lis2)_kz3+don_TD_P2@(lis2)_mn3"                      ";"; // services exposés
+         &execmd "do don_td_p2@(lis2)_dsa3 = don_TD_P2@(lis2)_fz3+don_TD_P2@(lis2)_gz3+don_TD_P2@(lis2)_iz3+don_TD_P2@(lis2)_lz3+don_TD_P2@(lis2)_ru3" ";"; // services abrités
+         &execmd "do don_td_p2@(lis2)_dsn3 = don_TD_P2@(lis2)_oq3"                                                                                     ";"; // services non marchands
+         &execmd "do don_td_p2@(lis2)_dai1 = don_TD_P2@(lis2)_az1+don_TD_P2@(lis2)_c11+don_TD_P2@(lis2)_c31+don_TD_P2@(lis2)_c41+don_TD_P2@(lis2)_c51" ";"; // agriculture+industrie
+         &execmd "do don_td_p2@(lis2)_nrj1 = don_TD_P2@(lis2)_de1+don_TD_P2@(lis2)_c21"                                                                ";"; // énergie
+         &execmd "do don_td_p2@(lis2)_dse1 = don_TD_P2@(lis2)_hz1+don_TD_P2@(lis2)_jz1+don_TD_P2@(lis2)_kz1+don_TD_P2@(lis2)_mn1"                      ";"; // services exposés
+         &execmd "do don_td_p2@(lis2)_dsa1 = don_TD_P2@(lis2)_fz1+don_TD_P2@(lis2)_gz1+don_TD_P2@(lis2)_iz1+don_TD_P2@(lis2)_lz1+don_TD_P2@(lis2)_ru1" ";"; // services abrités
+         &execmd "do don_td_p2@(lis2)_dsn1 = don_TD_P2@(lis2)_oq1"                                                                                     ";"; // services non marchands
+
+      // 1.c Construction production produits et branches en "1" au bon niveau d'agrégation
+         DO don_td_p1e_dai1 = don_td_p1e_az1 + don_td_p1e_c11 + don_td_p1e_c31 + don_td_p1e_c41 + don_td_p1e_c51 ,
+            don_td_p1e_dse1 = don_td_p1e_hz1 + don_td_p1e_jz1 + don_td_p1e_kz1 + don_td_p1e_mn1 ,
+            don_td_p1e_dsa1 = don_td_p1e_fz1 + don_td_p1e_gz1 + don_td_p1e_iz1 + don_td_p1e_lz1 + don_td_p1e_ru1 ,
+            don_td_p1e_nrj1 = don_td_p1e_c21 + don_td_p1e_de1 ,
+            don_td_p1e_dsn1 = don_td_p1e_oq1 ;
+
+         DO don_td_p1_dai1  = don_td_p1_az1 + don_td_p1_c11 + don_td_p1_c31 + don_td_p1_c41 + don_td_p1_c51 ,
+            don_td_p1_dse1  = don_td_p1_hz1 + don_td_p1_jz1 + don_td_p1_kz1 + don_td_p1_mn1 ,
+            don_td_p1_dsa1  = don_td_p1_fz1 + don_td_p1_gz1 + don_td_p1_iz1 + don_td_p1_lz1 + don_td_p1_ru1 ,
+            don_td_p1_nrj1  = don_td_p1_c21 + don_td_p1_de1 ,
+            don_td_p1_dsn1  = don_td_p1_oq1 ;
+
+         DO don_td_p2e_dai1 = don_td_p2e_az1 + don_td_p2e_c11 + don_td_p2e_c31 + don_td_p2e_c41 + don_td_p2e_c51 ,
+            don_td_p2e_dse1 = don_td_p2e_hz1 + don_td_p2e_jz1 + don_td_p2e_kz1 + don_td_p2e_mn1 ,
+            don_td_p2e_dsa1 = don_td_p2e_fz1 + don_td_p2e_gz1 + don_td_p2e_iz1 + don_td_p2e_lz1 + don_td_p2e_ru1 ,
+            don_td_p2e_nrj1 = don_td_p2e_c21 + don_td_p2e_de1 ,
+            don_td_p2e_dsn1 = don_td_p2e_oq1 ;
+
+         DO don_td_p2_dai1 = don_td_p2_az1 + don_td_p2_c11 + don_td_p2_c31 + don_td_p2_c41 + don_td_p2_c51 ,
+            don_td_p2_dse1 = don_td_p2_hz1 + don_td_p2_jz1 + don_td_p2_kz1 + don_td_p2_mn1 ,
+            don_td_p2_dsa1 = don_td_p2_fz1 + don_td_p2_gz1 + don_td_p2_iz1 + don_td_p2_lz1 + don_td_p2_ru1 ,
+            don_td_p2_nrj1 = don_td_p2_c21 + don_td_p2_de1 ,
+            don_td_p2_dsn1 = don_td_p2_oq1 ;
+         
+      // 1.d Calcul de l'élément diagonal par solde
+         DO don_td_p2dai_dai3 = don_td_p2e_dai3-(don_td_p2dai_dse3+don_td_p2dai_dsa3+don_td_p2dai_dsn3+don_td_p2dai_nrj3) ,
+            don_td_p2nrj_nrj3 = don_td_p2e_nrj3-(don_td_p2nrj_dse3+don_td_p2nrj_dsa3+don_td_p2nrj_dsn3+don_td_p2nrj_dai3) ,
+            don_td_p2dse_dse3 = don_td_p2e_dse3-(don_td_p2dse_dai3+don_td_p2dse_dsa3+don_td_p2dse_dsn3+don_td_p2dse_nrj3) ,
+            don_td_p2dsa_dsa3 = don_td_p2e_dsa3-(don_td_p2dsa_dse3+don_td_p2dsa_dai3+don_td_p2dsa_dsn3+don_td_p2dsa_nrj3) ,
+            don_td_p2dsn_dsn3 = don_td_p2e_dsn3-(don_td_p2dsn_dse3+don_td_p2dsn_dsa3+don_td_p2dsn_dai3+don_td_p2dsn_nrj3) ,
+            don_td_p2dai_dai1 = don_td_p2e_dai1-(don_td_p2dai_dse1+don_td_p2dai_dsa1+don_td_p2dai_dsn1+don_td_p2dai_nrj1) ,
+            don_td_p2nrj_nrj1 = don_td_p2e_nrj1-(don_td_p2nrj_dse1+don_td_p2nrj_dsa1+don_td_p2nrj_dsn1+don_td_p2nrj_dai1) ,
+            don_td_p2dse_dse1 = don_td_p2e_dse1-(don_td_p2dse_dai1+don_td_p2dse_dsa1+don_td_p2dse_dsn1+don_td_p2dse_nrj1) ,
+            don_td_p2dsa_dsa1 = don_td_p2e_dsa1-(don_td_p2dsa_dse1+don_td_p2dsa_dai1+don_td_p2dsa_dsn1+don_td_p2dsa_nrj1) ,
+            don_td_p2dsn_dsn1 = don_td_p2e_dsn1-(don_td_p2dsn_dse1+don_td_p2dsn_dsa1+don_td_p2dsn_dai1+don_td_p2dsn_nrj1) ;
+
+      // 1.e Vérification
+      DO PRT.(MAXS(ABSV(td_p2e_az3-(TD_P2A17az_az3+TD_P2A17az_de3+TD_P2A17az_c13+TD_P2A17az_c23+TD_P2A17az_c33+TD_P2A17az_c43+TD_P2A17az_c53+
+                          TD_P2A17az_fz3+TD_P2A17az_gz3+TD_P2A17az_hz3+TD_P2A17az_iz3+TD_P2A17az_jz3+TD_P2A17az_kz3+TD_P2A17az_lz3+
+                          TD_P2A17az_mn3+TD_P2A17az_oq3+TD_P2A17az_ru3))));
+      DO PRT.(MAXS(ABSV(td_p2e_dai3-(TD_P2dai_dai3+TD_P2dai_nrj3+TD_P2dai_dse3+TD_P2dai_dsa3+TD_P2dai_dsn3))));
+                          
+      DO PRT.(MAXS(ABSV(td_p2_az3-(TD_P2A17az_az3+TD_P2A17de_az3+TD_P2A17c1_az3+TD_P2A17c2_az3+TD_P2A17c3_az3+TD_P2A17c4_az3+TD_P2A17c5_az3+
+                         TD_P2A17fz_az3+TD_P2A17gz_az3+TD_P2A17hz_az3+TD_P2A17iz_az3+TD_P2A17jz_az3+TD_P2A17kz_az3+TD_P2A17lz_az3+
+                         TD_P2A17mn_az3+TD_P2A17oq_az3+TD_P2A17ru_az3))));
+      DO PRT.(MAXS(ABSV(td_p2_dai3 -(TD_P2dai_dai3+TD_P2nrj_dai3+TD_P2dse_dai3+TD_P2dsa_dai3+TD_P2dsn_dai3))));
+
+
+
+   // 2.- Reconstitution des volumes
+   // 2.a Calcul des coefficients techniques en "1"
+      DO lis3 = C.("dai_"||lis2,"nrj_"||lis2,"dse_"||lis2,"dsa_"||lis2,"dsn_"||lis2), PRT.(lis3);
+      DO teibra = C.("dai","dai","dai","dai","dai","nrj","nrj","nrj","nrj","nrj","dse","dse","dse","dse","dse","dsa","dsa","dsa","dsa","dsa","dsn","dsn","dsn","dsn","dsn");
+
+      // Définition du TEI en "7_ch" 
+      &execmd "do don_ct_p2@(lis3)7_ch   =  don_td_p2@(lis3)1 / don_td_p1e_@(teibra)1 ;";
+      &execmd "do don_td_p2@(lis3)7_ch   =  don_ct_p2@(lis3)7_ch * don_td_p1e_@(teibra)7_ch ; do don_t_p2@(lis3)7_ch = don_td_p2@(lis3)7_ch ; " ;
+
+      // Calcul du 7 et des autres variables habituelles
+      DO INPUT = C.("p2dai_dai","p2dai_dse","p2dai_dsa","p2dai_dsn","p2dai_nrj",  
+      				"p2dse_dai","p2dse_dse","p2dse_dsa","p2dse_dsn","p2dse_nrj",
+      				"p2dsa_dai","p2dsa_dse","p2dsa_dsa","p2dsa_dsn","p2dsa_nrj",
+      				"p2dsn_dai","p2dsn_dse","p2dsn_dsa","p2dsn_dsn","p2dsn_nrj",
+      				"p2nrj_dai","p2nrj_dse","p2nrj_dsa","p2nrj_dsn","p2nrj_nrj");
+      // en CVS-CJO
+         DO cvscjo0    = "td_"||INPUT||"0";       // liste prix A-1
+         DO cvscjo9_ch = "td_"||INPUT||"9_ch";    // liste prix chaînés
+         DO cvscjo7    = "td_"||INPUT||"7";       // liste volume au prix A-1
+         DO cvscjo7_ch = "td_"||INPUT||"7_ch";    // liste volume chaîné
+         DO cvscjo3    = "td_"||INPUT||"3";       // liste valeur
+
+      // en brut (on prend les données CVS-CJO)
+         DO brut0      = "td_"||INPUT||"0";        // liste prix A-1
+         DO brut9_ch   = "td_"||INPUT||"9_ch";     // liste prix chaînés
+         DO brut7      = "td_"||INPUT||"7";        // liste volume au prix A-1
+         DO brut7_ch   = "td_"||INPUT||"7_ch";     // liste volume chaîné
+         DO brut3      = "td_"||INPUT||"3";        // liste valeur  */
+
+      &execmd "do don_@(brut0)      = pxbasevolch'f(don_@(brut7_ch),don_@(brut3))" ";";     // vol. chaîné et valeur -> prix A-1 le maillon est brut
+      &execmd "do don_@(cvscjo0)    = pxbasevolch'f(don_@(cvscjo7_ch),don_@(cvscjo3))" ";"; // vol. chaîné et valeur -> prix A-1 le maillon est cvs-cjo
+      &execmd "do don_@(cvscjo9_ch) = 100*don_@(cvscjo3)/don_@(cvscjo7_ch)"            ";"; // prix chaîné (en cvs-cjo)
+      &execmd "do don_@(cvscjo7)    = don_@(brut0)*don_@(cvscjo7_ch)"                  ";"; // vol. chaîné -> vol. prix A-1
+      &execmd "do don_@(brut7)      = don_@(brut0)*don_@(brut7_ch)"                    ";"; // vol. chaîné -> vol. prix A-1 en brut
+
+// Vérifications en produit puis en branche
+   DO PRT.(MAXS(ABSV(don_td_P2_dai3-(don_td_P2dai_dai3+don_td_P2dse_dai3+don_td_P2dsa_dai3+don_td_P2dsn_dai3+don_td_P2nrj_dai3))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dse3-(don_td_P2dai_dse3+don_td_P2dse_dse3+don_td_P2dsa_dse3+don_td_P2dsn_dse3+don_td_P2nrj_dse3))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dsa3-(don_td_P2dai_dsa3+don_td_P2dse_dsa3+don_td_P2dsa_dsa3+don_td_P2dsn_dsa3+don_td_P2nrj_dsa3))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dsn3-(don_td_P2dai_dsn3+don_td_P2dse_dsn3+don_td_P2dsa_dsn3+don_td_P2dsn_dsn3+don_td_P2nrj_dsn3))));
+   DO PRT.(MAXS(ABSV(don_td_P2_nrj3-(don_td_P2dai_nrj3+don_td_P2dse_nrj3+don_td_P2dsa_nrj3+don_td_P2dsn_nrj3+don_td_P2nrj_nrj3))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dai3-(don_td_P2dai_dai3+don_td_P2dai_dse3+don_td_P2dai_dsa3+don_td_P2dai_dsn3+don_td_P2dai_nrj3))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dse3-(don_td_P2dse_dai3+don_td_P2dse_dse3+don_td_P2dse_dsa3+don_td_P2dse_dsn3+don_td_P2dse_nrj3))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dsa3-(don_td_P2dsa_dai3+don_td_P2dsa_dse3+don_td_P2dsa_dsa3+don_td_P2dsa_dsn3+don_td_P2dsa_nrj3))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dsn3-(don_td_P2dsn_dai3+don_td_P2dsn_dse3+don_td_P2dsn_dsa3+don_td_P2dsn_dsn3+don_td_P2dsn_nrj3))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_nrj3-(don_td_P2nrj_dai3+don_td_P2nrj_dse3+don_td_P2nrj_dsa3+don_td_P2nrj_dsn3+don_td_P2nrj_nrj3))));
+      
+// Exportation des données
+
+   &ts2tbl file "tei.csv" 
+           vari don_td_p2dai_dai7 don_td_p2dai_dse7 don_td_p2dai_dsa7 don_td_p2dai_dsn7 don_td_p2dai_nrj7 
+                don_td_p2dse_dai7 don_td_p2dse_dse7 don_td_p2dse_dsa7 don_td_p2dse_dsn7 don_td_p2dse_nrj7 
+                don_td_p2dsa_dai7 don_td_p2dsa_dse7 don_td_p2dsa_dsa7 don_td_p2dsa_dsn7 don_td_p2dsa_nrj7 
+                don_td_p2dsn_dai7 don_td_p2dsn_dse7 don_td_p2dsn_dsa7 don_td_p2dsn_dsn7 don_td_p2dsn_nrj7 
+                don_td_p2nrj_dai7 don_td_p2nrj_dse7 don_td_p2nrj_dsa7 don_td_p2nrj_dsn7 don_td_p2nrj_nrj7
+                don_td_p2_dai7    don_td_p2_dse7    don_td_p2_dsa7    don_td_p2_dsn7    don_td_p2_nrj7
+                don_td_p2e_dai7   don_td_p2e_dse7   don_td_p2e_dsa7   don_td_p2e_dsn7   don_td_p2e_nrj7;
+
+// Récupération des séries après calage sur marge
+   &tbl2ts file "./CTrim/teivolcor.wk1";  
+   DO don_td_p2dai_dai7 = td_p2dai_dai7 ;
+   DO don_td_p2dai_dse7 = td_p2dai_dse7 ; 
+   DO don_td_p2dai_dsa7 = td_p2dai_dsa7 ;
+   DO don_td_p2dai_nrj7 = td_p2dai_nrj7 ;
+   DO don_td_p2dai_dsn7 = td_p2dai_dsn7 ;
+   DO don_td_p2dse_dai7 = td_p2dse_dai7 ;
+   DO don_td_p2dse_dse7 = td_p2dse_dse7 ; 
+   DO don_td_p2dse_dsa7 = td_p2dse_dsa7 ;
+   DO don_td_p2dse_nrj7 = td_p2dse_nrj7 ;
+   DO don_td_p2dse_dsn7 = td_p2dse_dsn7 ;
+   DO don_td_p2dsa_dai7 = td_p2dsa_dai7 ;
+   DO don_td_p2dsa_dse7 = td_p2dsa_dse7 ; 
+   DO don_td_p2dsa_dsa7 = td_p2dsa_dsa7 ;
+   DO don_td_p2dsa_nrj7 = td_p2dsa_nrj7 ;
+   DO don_td_p2dsa_dsn7 = td_p2dsa_dsn7 ;
+   DO don_td_p2nrj_dai7 = td_p2nrj_dai7 ;
+   DO don_td_p2nrj_dse7 = td_p2nrj_dse7 ; 
+   DO don_td_p2nrj_dsa7 = td_p2nrj_dsa7 ;
+   DO don_td_p2nrj_nrj7 = td_p2nrj_nrj7 ;
+   DO don_td_p2nrj_dsn7 = td_p2nrj_dsn7 ;
+   DO don_td_p2dsn_dai7 = td_p2dsn_dai7 ;
+   DO don_td_p2dsn_dse7 = td_p2dsn_dse7 ; 
+   DO don_td_p2dsn_dsa7 = td_p2dsn_dsa7 ;
+   DO don_td_p2dsn_nrj7 = td_p2dsn_nrj7 ;
+   DO don_td_p2dsn_dsn7 = td_p2dsn_dsn7 ;
+ 	
+// Vérifications
+
+   DO PRT.(MAXS(ABSV(don_td_P2_dai7 -(don_td_P2dai_dai7+don_td_P2dse_dai7+don_td_P2dsa_dai7+don_td_P2dsn_dai7+don_td_P2nrj_dai7))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dse7 -(don_td_P2dai_dse7+don_td_P2dse_dse7+don_td_P2dsa_dse7+don_td_P2dsn_dse7+don_td_P2nrj_dse7))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dsa7 -(don_td_P2dai_dsa7+don_td_P2dse_dsa7+don_td_P2dsa_dsa7+don_td_P2dsn_dsa7+don_td_P2nrj_dsa7))));
+   DO PRT.(MAXS(ABSV(don_td_P2_dsn7 -(don_td_P2dai_dsn7+don_td_P2dse_dsn7+don_td_P2dsa_dsn7+don_td_P2dsn_dsn7+don_td_P2nrj_dsn7))));
+   DO PRT.(MAXS(ABSV(don_td_P2_nrj7 -(don_td_P2dai_nrj7+don_td_P2dse_nrj7+don_td_P2dsa_nrj7+don_td_P2dsn_nrj7+don_td_P2nrj_nrj7))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dai7-(don_td_P2dai_dai7+don_td_P2dai_dse7+don_td_P2dai_dsa7+don_td_P2dai_dsn7+don_td_P2dai_nrj7))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dse7-(don_td_P2dse_dai7+don_td_P2dse_dse7+don_td_P2dse_dsa7+don_td_P2dse_dsn7+don_td_P2dse_nrj7))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dsa7-(don_td_P2dsa_dai7+don_td_P2dsa_dse7+don_td_P2dsa_dsa7+don_td_P2dsa_dsn7+don_td_P2dsa_nrj7))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_dsn7-(don_td_P2dsn_dai7+don_td_P2dsn_dse7+don_td_P2dsn_dsa7+don_td_P2dsn_dsn7+don_td_P2dsn_nrj7))));
+   DO PRT.(MAXS(ABSV(don_td_P2e_nrj7-(don_td_P2nrj_dai7+don_td_P2nrj_dse7+don_td_P2nrj_dsa7+don_td_P2nrj_dsn7+don_td_P2nrj_nrj7))));
+
+
+
+   // ********************************************************************************************************
+   // ******** Ajouts spécifiques pour modélisation CI NRJ "hors branche NRJ"                          *******
+   // ********************************************************************************************************
+ 
+		DO don_td_p2dhnrj_nrj3 = don_td_p2dai_nrj3 + don_td_p2dse_nrj3 + don_td_p2dsa_nrj3 + don_td_p2dsn_nrj3 ;   
+		DO don_td_p2dhnrj_nrj7 = don_td_p2dai_nrj7 + don_td_p2dse_nrj7 + don_td_p2dsa_nrj7 + don_td_p2dsn_nrj7 ;
+		DO don_td_b1_dhnrj3 = don_td_b1_d3 - don_td_b1_nrj3 ;
+		DO don_td_b1_dhnrj7 = don_td_b1_d7 - don_td_b1_nrj7 ;
+		
+		DO don_td_p2e_dhnrj3 = don_td_p2e_dai3 + don_td_p2e_dse3 + don_td_p2e_dsa3 + don_td_p2e_dsn3 ;
+		DO don_td_p2e_dhnrj7 = don_td_p2e_dai7 + don_td_p2e_dse7 + don_td_p2e_dsa7 + don_td_p2e_dsn7 ;
+		
+		DO don_td_p1e_dhnrj3 = don_td_p1e_d3 - don_td_p1e_nrj3 ; 
+		DO don_td_p1e_dhnrj7 = don_td_p1e_d7 - don_td_p1e_nrj7 ; 
+
+		DO don_td_dinthcinrj_nrj3 = don_td_p3m_nrj3 + don_td_p2dhnrj_nrj3 ; 
+		DO don_td_dinthcinrj_nrj7 = don_td_p3m_nrj7 + don_td_p2dhnrj_nrj7 ; 
+				
+// ***********************************************************************************************************************
+// *****  Construction des séries utiles à partir des séries agrégées : prix A-1, volume chaîné, prix chaîné         *****
+// ***********************************************************************************************************************
+    DO dhnrj = C.("p2e_dhnrj","b1_dhnrj","p2dhnrj_nrj","p1e_dhnrj","dinthcinrj_nrj");  
+    do input = c.(input,dhnrj); 
+    do prt.(input) ; 
+    
+    
+      // en CVS-CJO uniquement
+         DO o_cvscjo0    = "td_"||INPUT||"0";       // liste prix A-1
+         DO o_cvscjo9_ch = "td_"||INPUT||"9_ch";    // liste prix chaînés
+         DO o_cvscjo7    = "td_"||INPUT||"7";       // liste volume au prix A-1
+         DO o_cvscjo7_ch = "td_"||INPUT||"7_ch";    // liste volume chaîné
+         DO o_cvscjo3    = "td_"||INPUT||"3";       // liste valeur
+
+      // le coefficient correctif associé
+         DO liste_coef = "corr_"||INPUT;
+         DO PRT.(liste_coef);
+
+         &execmd "do don_@(o_cvscjo0)    = pxbasevolvo'f(don_@(o_cvscjo7),don_@(o_cvscjo3))" ";" ;
+         &execmd "do don_@(o_cvscjo7_ch) = don_@(o_cvscjo7)/don_@(o_cvscjo0)"                ";" ;
+         &execmd "do don_@(o_cvscjo9_ch) = 100*don_@(o_cvscjo3)/don_@(o_cvscjo7_ch)"         ";" ;
+         &execmd "do don_@(liste_coef)   = 1*td_pib3/td_pib3 " ";" ;
+
+DELACCESS all; DELSAVE all; DRANGE;
+
+// ***********************************************************************************************************************
+// Fin du programme "Mes1b"
+// ***********************************************************************************************************************

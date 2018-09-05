@@ -1,0 +1,382 @@
+﻿// Ce code source est régi par la licence CeCILL V2.1 soumise au droit français et respectant les principes de diffusion des logiciels libres. Il est autorisé de modifier et/ou redistribuer ce code sous les conditions de la licence CeCILL V2.1. Le texte complet de la licence CeCILL V2.1 est dans le fichier `LICENSE.txt`.
+
+// ***************************************************************************/
+// ***** construction du modèle - marché du travail à deux travailleurs ******/
+// ***************************************************************************/
+
+// input  : - fichier don3.frm 
+//			- fichier avec les coefficients estimés
+//			- modèle mésange hors marché du travail mesangehorsml
+
+// ouputs : - fichier don3b.frm
+//          - modèle mesange avec marché du travail 
+//			- fichier avec les coefficients estimés y compris marché du travail
+
+// initialisation et importation de la boîte à outils
+delaccess all; delsave all; drange;
+access outils id .\outils; search outils ; 
+      
+// importation de la base de données enrichie
+access bdd id .\bdd\don3a.frm   type formdata mode r; search bdd;
+access cad id .\bdd\don3b2L.frm   type formdata mode c; search cad;
+do dfdelete("cad",">");
+do dfcopy'f ("bdd","cad");
+delsearch bdd; delaccess bdd;
+
+// importation de la base avec les coefficients estimés
+access coef type formdata id .\bdd\mesangecoefhorsML.frm  mode w; search coef;
+ACCESS coefmod type formdata id .\bdd\mesangecoef2Lb.frm  mode c; SEARCH coefmod ;
+do dfdelete("coefmod",">");
+do dfcopy'f ("coef","coefmod");
+delsearch coef; delaccess coef ;
+
+
+
+do prt.(endo_ct_ecm) ;
+DO cad_endo_ct_ecm_new = C.(endo_ct_ecm, 
+	"tc_emps_q7","tc_emps_nq7",
+	"smpt_q7","smpt_nq7","smpt_dsn","smpt_dsn_hapu",
+	"tc_emps_q_dai7","tc_emps_q_dse7","tc_emps_q_nrj7",
+	"tc_emps_nq_dai7","tc_emps_nq_dse7","tc_emps_nq_nrj7",
+	"tc_d11_nq3","tc_d11_nq_dai3","tc_d11_nq_dse3","tc_d11_nq_nrj3",
+	"tc_d11_q3","tc_d11_q_dai3","tc_d11_q_dse3","tc_d11_q_nrj3",
+	"tc_d1_nq3","tc_d1_nq_dai3","tc_d1_nq_dse3","tc_d1_nq_nrj3",
+	"tc_d1_q3","tc_d1_q_dai3","tc_d1_q_dse3","tc_d1_q_nrj3","tc_d1_dsn3",
+	"tc_emps_sm1","tc_empns_d1",
+	"eff_dai","eff_dse","eff_dsa","eff_nrj",
+	"eff_dai_nq","eff_dse_nq","eff_dsa_nq","eff_nrj_nq",
+	"eff_dai_q","eff_dse_q","eff_dsa_q","eff_nrj_q",
+			"smpt_s13"	, "tc_emps_s131" , "tc_emps_dsn_hapu1"	);   
+         
+	      
+delaccess all; delsave ;
+
+
+
+usemod mesangehorsML ;
+
+addsym policy 
+	emps_q_cale  emps_nq_cale
+	smpt_q7_cale smpt_nq7_cale
+
+    ct_emps_nq_dai7  ct_emps_nq_dse7  ct_emps_nq_nrj7 
+	ct_emps_q_dai7   ct_emps_q_dse7   ct_emps_q_nrj7  
+ 	  	 ct_empns_d1 	      emps_dsn_hapu1_cale emps_s131_cale   
+	ct_coefeqtp_sm
+	
+ 	ct_d11_nq3 ct_d11_nq_dai3   ct_d11_nq_dse3   ct_d11_nq_nrj3
+ 	ct_d11_q3  ct_d11_q_dai3    ct_d11_q_dse3    ct_d11_q_nrj3
+ 	ct_d1_nq3  ct_d1_nq_dai3    ct_d1_nq_dse3    ct_d1_nq_nrj3
+ 	ct_d1_q3   ct_d1_q_dai3     ct_d1_q_dse3     ct_d1_q_nrj3  	
+	ct_d1_dsn3
+	
+	ct_eff_dai 	 	ct_eff_dse 		ct_eff_dsa 		ct_eff_nrj 
+	ct_eff_dai_q 	ct_eff_dse_q 	ct_eff_dsa_q 	ct_eff_nrj_q 
+	ct_eff_dai_nq 	ct_eff_dse_nq 	ct_eff_dsa_nq 	ct_eff_nrj_nq 
+	ct_smpt_dsn ct_smpt_dsn_hapu  ct_smpt_s13
+	,
+				
+	exogenous 
+	smic_cvs_cp
+	
+	,
+	
+	endogenous 
+	smpt_s13
+	tcho tc_cho_d1  	  
+	
+	tc_emps_nq7  tc_emps_q7 
+	smpt_nq7	 smpt_q7	
+	smpt_sm7 smpt_dsn smpt_dsn_hapu smpt_sm
+	tc_emp_d1 tc_emps_d1 tc_empns_d1
+	tc_emps_sm7 tc_emps_dai7 tc_emps_dse7 tc_emps_nrj7 tc_emps_dsa7 
+ 	tc_emps_sm1 tc_emps_dsn1    tc_emps_dsn_hapu1   tc_emps_s131   
+	tc_emps_nq_dai7 	tc_emps_nq_dse7 	tc_emps_nq_dsa7 	tc_emps_nq_nrj7
+	tc_emps_q_dai7 		tc_emps_q_dse7 		tc_emps_q_dsa7 		tc_emps_q_nrj7
+		
+    tc_d11_nq3  tc_d11_nq_dai3 tc_d11_nq_dse3 tc_d11_nq_dsa3 tc_d11_nq_nrj3
+	tc_d11_q3 	tc_d11_q_dai3  tc_d11_q_dse3  tc_d11_q_dsa3  tc_d11_q_nrj3
+    tc_d1_nq3   tc_d1_nq_dai3  tc_d1_nq_dse3  tc_d1_nq_dsa3  tc_d1_nq_nrj3
+	tc_d1_q3 	tc_d1_q_dai3   tc_d1_q_dse3   tc_d1_q_dsa3   tc_d1_q_nrj3  
+ 
+	tc_d1_sm3 tc_d1_dai3  tc_d1_dsa3  tc_d1_dse3  tc_d1_nrj3 tc_d1_dsn3 tc_d1_d3
+	tc_d11_d3 tc_d11_sm3 tc_d11_dai3 tc_d11_dsa3 tc_d11_dse3 tc_d11_nrj3 tc_d11_dsn3 
+	
+	cw_sm cwr_sm
+	cw_q cw_nq
+	eff_dai 	eff_dse 	eff_dsa 	eff_nrj
+	eff_dai_q 	eff_dse_q 	eff_dsa_q 	eff_nrj_q
+	eff_dai_nq 	eff_dse_nq 	eff_dsa_nq 	eff_nrj_nq
+	;
+	
+	
+	addeq bottom,
+
+// emploi, chômage	
+ec_emp_d1      	: tc_emp_d1  = tc_emps_d1 + tc_empns_d1 ,
+ec_emps_d1  	: tc_emps_d1 = tc_emps_sm1 + tc_emps_dsn1 ,
+ec_tcho  	 	: tcho = 100*(1-tc_emp_d1/popact) ,
+ec_cho_d1      	: tc_cho_d1  = (tcho/100) * popact ,  
+ect_empns_d1 	: tc_empns_d1 = ct_empns_d1 * tc_emps_sm1  ,
+ect_emps_sm1 	: ct_coefeqtp_sm = tc_emps_sm7 / tc_emps_sm1 ,		
+
+ // solde sur l'emploi DSA
+ect_emps_nq_dai7 : tc_emps_nq_dai7 =  ct_emps_nq_dai7*(td_b1_dai7_ch/td_b1_sm7_ch)*tc_emps_nq7 ,
+ect_emps_nq_dse7 : tc_emps_nq_dse7 =  ct_emps_nq_dse7*(td_b1_dse7_ch/td_b1_sm7_ch)*tc_emps_nq7 ,
+ect_emps_nq_nrj7 : tc_emps_nq_nrj7 =  ct_emps_nq_nrj7*(td_b1_nrj7_ch/td_b1_sm7_ch)*tc_emps_nq7 ,
+ec_emps_nq_dsa7  : tc_emps_nq_dsa7 = tc_emps_nq7 - tc_emps_nq_dai7 - tc_emps_nq_dse7 - tc_emps_nq_nrj7  ,
+
+ect_emps_q_dai7 : tc_emps_q_dai7 =  ct_emps_q_dai7*(td_b1_dai7_ch/td_b1_sm7_ch)*tc_emps_q7 ,
+ect_emps_q_dse7 : tc_emps_q_dse7 =  ct_emps_q_dse7*(td_b1_dse7_ch/td_b1_sm7_ch)*tc_emps_q7 ,
+ect_emps_q_nrj7 : tc_emps_q_nrj7 =  ct_emps_q_nrj7*(td_b1_nrj7_ch/td_b1_sm7_ch)*tc_emps_q7 ,
+ec_emps_q_dsa7  : tc_emps_q_dsa7 = tc_emps_q7 - tc_emps_q_dai7 - tc_emps_q_dse7 - tc_emps_q_nrj7  ,
+ 
+ec_emps_sm7  : tc_emps_sm7  = tc_emps_q7 + tc_emps_nq7 ,
+ec_emps_dai7 : tc_emps_dai7 = tc_emps_nq_dai7 + tc_emps_q_dai7 ,
+ec_emps_dse7 : tc_emps_dse7 = tc_emps_nq_dse7 + tc_emps_q_dse7 ,
+ec_emps_dsa7 : tc_emps_dsa7 = tc_emps_nq_dsa7 + tc_emps_q_dsa7 ,
+ec_emps_nrj7 : tc_emps_nrj7 = tc_emps_nq_nrj7 + tc_emps_q_nrj7 ,
+
+ec_emps_dsn1 : tc_emps_dsn1 = tc_emps_s131 + tc_emps_dsn_hapu1 ,
+
+
+// D11 Q et NQ ventilation par secteur : solde sur DSA
+ect_d11_nq3     : tc_d11_nq3   = ct_d11_nq3 * tc_emps_nq7 * smpt_nq7 ,
+ect_d11_nq_dai3 : tc_d11_nq_dai3 = ct_d11_nq_dai3*tc_emps_nq_dai7*smpt_nq7 ,
+ect_d11_nq_dse3 : tc_d11_nq_dse3 = ct_d11_nq_dse3*tc_emps_nq_dse7*smpt_nq7 ,
+ect_d11_nq_nrj3 : tc_d11_nq_nrj3 = ct_d11_nq_nrj3*tc_emps_nq_nrj7*smpt_nq7 ,
+ec_d11_nq_dsa3  : tc_d11_nq_dsa3 = tc_d11_nq3 - (tc_d11_nq_dai3+tc_d11_nq_dse3+tc_d11_nq_nrj3) ,
+
+ect_d11_q3     : tc_d11_q3   = ct_d11_q3 * tc_emps_q7 * smpt_q7 ,
+ect_d11_q_dai3 : tc_d11_q_dai3 = ct_d11_q_dai3*tc_emps_q_dai7*smpt_q7 ,
+ect_d11_q_dse3 : tc_d11_q_dse3 = ct_d11_q_dse3*tc_emps_q_dse7*smpt_q7 ,
+ect_d11_q_nrj3 : tc_d11_q_nrj3 = ct_d11_q_nrj3*tc_emps_q_nrj7*smpt_q7 ,
+ec_d11_q_dsa3  : tc_d11_q_dsa3 = tc_d11_q3 - (tc_d11_q_dai3+tc_d11_q_dse3+tc_d11_q_nrj3) ,
+
+ec_d11_dai3 : tc_d11_dai3 = tc_d11_q_dai3 + tc_d11_nq_dai3 ,
+ec_d11_dse3 : tc_d11_dse3 = tc_d11_q_dse3 + tc_d11_nq_dse3 ,
+ec_d11_dsa3 : tc_d11_dsa3 = tc_d11_q_dsa3 + tc_d11_nq_dsa3 ,
+ec_d11_nrj3 : tc_d11_nrj3 = tc_d11_q_nrj3 + tc_d11_nq_nrj3 ,
+
+// D1 Q et NQ ventilation par secteur : solde sur DSA
+ect_d1_nq3     : tc_d1_nq3     = ct_d1_nq3 * tc_d11_nq3 * (1+tce_nq) ,
+ect_d1_nq_dai3 : tc_d1_nq_dai3 = ct_d1_nq_dai3*tc_d11_nq_dai3*(tc_d1_nq3/tc_d11_nq3) ,
+ect_d1_nq_dse3 : tc_d1_nq_dse3 = ct_d1_nq_dse3*tc_d11_nq_dse3*(tc_d1_nq3/tc_d11_nq3) ,
+ect_d1_nq_nrj3 : tc_d1_nq_nrj3 = ct_d1_nq_nrj3*tc_d11_nq_nrj3*(tc_d1_nq3/tc_d11_nq3)  ,
+ec_d1_nq_dsa3  : tc_d1_nq_dsa3 = tc_d1_nq3 - (tc_d1_nq_dai3+tc_d1_nq_dse3+tc_d1_nq_nrj3) ,
+
+ect_d1_q3     : tc_d1_q3     = ct_d1_q3 * tc_d11_q3 * (1+tce_q) ,
+ect_d1_q_dai3 : tc_d1_q_dai3 = ct_d1_q_dai3*tc_d11_q_dai3*(tc_d1_q3/tc_d11_q3) ,
+ect_d1_q_dse3 : tc_d1_q_dse3 = ct_d1_q_dse3*tc_d11_q_dse3*(tc_d1_q3/tc_d11_q3) ,
+ect_d1_q_nrj3 : tc_d1_q_nrj3 = ct_d1_q_nrj3*tc_d11_q_nrj3*(tc_d1_q3/tc_d11_q3)  ,
+ec_d1_q_dsa3  : tc_d1_q_dsa3 = tc_d1_q3 - (tc_d1_q_dai3+tc_d1_q_dse3+tc_d1_q_nrj3) ,
+
+ec_d1_dai3 : tc_d1_dai3 = tc_d1_q_dai3 + tc_d1_nq_dai3 ,
+ec_d1_dse3 : tc_d1_dse3 = tc_d1_q_dse3 + tc_d1_nq_dse3 ,
+ec_d1_dsa3 : tc_d1_dsa3 = tc_d1_q_dsa3 + tc_d1_nq_dsa3 ,
+ec_d1_nrj3 : tc_d1_nrj3 = tc_d1_q_nrj3 + tc_d1_nq_nrj3 ,
+
+	// agrégats D1 et D11
+ec_d1_sm3  : tc_d1_sm3  = tc_d1_q3  + tc_d1_nq3  ,
+ec_d1_d3 : tc_d1_d3 = tc_d1_sm3 + tc_d1_dsn3 ,
+
+ec_d11_sm3 : tc_d11_sm3 = tc_d11_q3 + tc_d11_nq3 ,
+ec_d11_d3   : tc_d11_d3 = tc_d11_sm3 + tc_d11_dsn3 ,
+
+
+// DSN
+ec_d11_dsn3 : tc_d11_dsn3  = (smpt_dsn/1000) * tc_emps_dsn1 ,
+ect_d1_dsn3 : tc_d1_dsn3 = ct_d1_dsn3*tc_d11_dsn3 ,   
+
+
+//smpt
+ec_smpt_sm : smpt_sm = ct_coefeqtp_sm * smpt_sm7 ,
+ec_smpt_sm7 : smpt_sm7 = 1e3*(tc_d11_sm3 /tc_emps_sm7),
+ect_smpt_dsn : smpt_dsn = ct_smpt_dsn * (tc_emps_s131/tc_emps_dsn1*smpt_s13 + (tc_emps_dsn_hapu1/tc_emps_dsn1)*smpt_dsn_hapu) , 
+ect_smpt_dsn_hapu : smpt_dsn_hapu = ct_smpt_dsn_hapu * smpt_sm , 
+ec_smpt_s13 :  smpt_s13 = ct_smpt_s13 * smpt_sm,
+
+// coût du travail, efficience
+ec_cw_sm   : cw_sm  = 1000*tc_d1_sm3/tc_emps_sm7,  
+ec_cwr_sm  : cwr_sm = cw_sm / td_b1_sm9_ch ,
+
+ec_cw_q  : cw_q  = 1000*(tc_D1_q3/tc_emps_q7) ,
+ec_cw_nq : cw_nq = 1000*(tc_D1_nq3/tc_emps_nq7),
+
+ect_eff_dai : eff_dai = ct_eff_dai * 1000*tc_d1_dai3/tc_emps_dai7/exp(eff2) ,
+ect_eff_dse : eff_dse = ct_eff_dse * 1000*tc_d1_dse3/tc_emps_dse7/exp(eff2) ,
+ect_eff_dsa : eff_dsa = ct_eff_dsa * 1000*tc_d1_dsa3/tc_emps_dsa7/exp(eff2) ,
+ect_eff_nrj : eff_nrj = ct_eff_nrj * 1000*tc_d1_nrj3/tc_emps_nrj7/exp(eff2) , 
+	
+ect_eff_dai_q : eff_dai_q = ct_eff_dai_q * tc_d1_q_dai3/tc_emps_q_dai7/EXP(eff2) ,
+ect_eff_dse_q : eff_dse_q = ct_eff_dse_q * tc_d1_q_dse3/tc_emps_q_dse7/EXP(eff2) ,
+ect_eff_dsa_q : eff_dsa_q = ct_eff_dsa_q * tc_d1_q_dsa3/tc_emps_q_dsa7/EXP(eff2) ,
+ect_eff_nrj_q : eff_nrj_q = ct_eff_nrj_q * tc_d1_q_nrj3/tc_emps_q_nrj7/EXP(eff2) , 
+
+ect_eff_dai_nq : eff_dai_nq = ct_eff_dai_nq *tc_d1_nq_dai3/tc_emps_nq_dai7/EXP(eff2) ,
+ect_eff_dse_nq : eff_dse_nq = ct_eff_dse_nq *tc_d1_nq_dse3/tc_emps_nq_dse7/EXP(eff2) ,
+ect_eff_dsa_nq : eff_dsa_nq = ct_eff_dsa_nq *tc_d1_nq_dsa3/tc_emps_nq_dsa7/EXP(eff2) ,
+ect_eff_nrj_nq : eff_nrj_nq = ct_eff_nrj_nq *tc_d1_nq_nrj3/tc_emps_nq_nrj7/EXP(eff2) , 
+	
+	//Emploi non marchand
+ecm_emps_s131 : DEL(LOG(tc_emps_s131))- DEL(emps_s131_cale)  =  emps_s131cst'c -0.05*(LOG(tc_emps_s131)-emps_s131_cale - LOG(popact))(-1)  , 
+ecm_emps_dsn_hapu1 : DEL(LOG(tc_emps_dsn_hapu1)) - DEL(emps_dsn_hapu1_cale)  = emps_dsn_hapu1cst'c -0.05*(LOG(tc_emps_dsn_hapu1)-emps_dsn_hapu1_cale - LOG(popact))(-1)  ,
+
+//Emploi qualifié
+ecm_emploi_q : DEL(LOG(tc_emps_q7) - emps_q_cale) = 
+        empqcstct'c
+        + empqar1'c * DEL(LOG(tc_emps_q7)-emps_q_cale)(-1)
+        + empqva0'c * DEL(LOG(td_b1_sm7_ch))(-0)
+        + empqcwr0'c * DEL(LOG(cw_q/td_b1_sm9_ch))(-0)
+        + muempq'c * (LOG(tc_emps_q7)-emps_q_cale-LOG(td_b1_sm7_ch)+eff2_proj)(-1)
+        + muempqltcwr'c * (LOG(cw_q/td_b1_sm9_ch)-eff2_proj)(-1)
+        + muempqchoc2'c * sup09q1(-1)
+        + muempqtendance1'c * temps76(-1)
+        + muempqtendance2'c * temps91(-1) ,
+ 
+//Emploi non qualifié
+ecm_emploi_nq : DEL(LOG(tc_emps_nq7) - emps_nq_cale) = 
+        empnqcstct'c
+        + empnqar1'c * DEL(LOG(tc_emps_nq7)-emps_nq_cale)(-1)
+        + empnqva0'c * DEL(LOG(td_b1_sm7_ch))(-0)
+        + empnqcwrp0'c * DEL(LOG(cw_nq/td_b1_sm9_ch))(-0)
+        + muempnq'c * (LOG(tc_emps_nq7)-emps_nq_cale-LOG(td_b1_sm7_ch)+eff2_proj
+        + 0.679396 * (LOG(cw_nq/td_b1_sm9_ch)-eff2_proj))(-1) //on calibre pour être cohérent avec le cadre théorique
+        + muempnqchoc2'c * sup09q1(-1)
+        + muempnqtendance1'c * temps76(-1)
+        + muempnqtendance2'c * temps91(-1) ,
+ 
+
+
+	    //Salaire des qualifiés
+ecm_wq :DEL(LOG(smpt_q7) - smpt_q7_CALE) =
+       wqcst1'c
+     + wqar1'c*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-1)
+     + (1-wqar1'c-wqipc0'c-wqipc1'c)*DEL(LOG(smpt_q7) - smpt_q7_CALE)(-2)
+     + wqipc0'c*DEL(LOG(ipc))(-0)
+     + wqipc1'c*DEL(LOG(ipc))(-1)
+     + wqdcho0'c*DEL(tcho)
+     + wqprod0'c*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wqcp'c*DEL(LOG(smic_cvs_cp))
+     + wqmu'c * ( LOG(smpt_q7)+LOG(1+tce_q) - smpt_q7_cale 
+     				- 1*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.12*LOG(smic_cvs_cp)
+ 					-(LOG(1+tce_q) -(LOG(1-tcs_q -csgcrds)+LOG(1-tir_smooth)))
+ 					)(-1)
+     				+ wqltsup09'c*sup09q1(-1)
+				    + wqltcho'c* tcho(-3),
+				
+				
+		//Salaire des non qualifiés
+ ecm_wnq :DEL(LOG(smpt_nq7) - smpt_nq7_CALE) =
+       wnqcst1'c
+     + wnqar1'c*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-1)
+     + (1-wnqar1'c-wnqipc0'c-wnqipc1'c)*DEL(LOG(smpt_nq7) - smpt_nq7_CALE)(-2)
+     + wnqipc0'c*DEL(LOG(ipc))(-0)
+     + wnqipc1'c*DEL(LOG(ipc))(-1)
+     + wnqprod0'c*DEL(LOG(td_b1_sm7_ch/tc_emps_sm7))
+     + wnqdcho0'c*DEL(tcho)
+     + wnqcp'c*DEL(LOG(smic_cvs_cp))
+     + wnqmu'c * (LOG(smpt_nq7)+LOG(1+tce_nq) - smpt_nq7_cale 
+     				- 1*LOG(TD_B1_SM9_CH)
+     				- 0*LOG(IPC)
+     				- 1*LOG(td_b1_sm7_ch/tc_emps_sm7)
+                    - 0.48*LOG(smic_cvs_cp)
+ 					-(LOG(1+tce_nq)- (LOG(1-tcs_nq -csgcrds)+LOG(1-tir_smooth)))
+					)(-1)
+					+ wnqlttend'c*temps76(-1)
+     				+ wnqltsup09'c*sup09q1(-1)
+				    + wnqltcho'c* tcho(-3) 
+	;    
+	    
+	 filemod mesange2L ;
+	 access cad     type formdata id .\bdd\don3b2L.frm         mode w; search cad;
+     ACCESS coefmod type formdata id .\bdd\mesangecoef2Lb.frm  mode w; SEARCH coefmod;
+
+
+	 
+    // ***********************************************************************************************************************
+    // ***** mise à 0 des cales et des coefficients techniques                                                           *****
+    // ***********************************************************************************************************************
+    
+	 do cad_liste_pol = modsym("'pol"); do prt.(liste_pol); 
+     &execmd " do cad_@(liste_pol)     = 0 * cad_td_pib3" ";" ;
+
+	 lkord ;
+     usemod mesange2L;
+     &lklimit; 
+     
+     
+    // ***********************************************************************************************************************
+    // ***** estimation des équations                                                                                    *****
+    // ***********************************************************************************************************************
+    delaccess all; delsave ; drange;
+    access cad     type formdata id .\bdd\don3b2L.frm mode r ;         search cad ;
+    ACCESS coefmod type formdata id .\bdd\mesangecoef2Lb.frm mode w ; SEARCH coefmod ;
+
+    USEMOD mesange2L ;
+    	BOUNDS 1985q1 TO 2014q4; OLSMOD ecm_emps_s131 ; FILECOEF coefmod; 
+		BOUNDS 1985q1 TO 2014q4; OLSMOD ecm_emps_dsn_hapu1 ; FILECOEF coefmod;  
+  	   // Emploi (par eqtp) des Q et des NQ
+	bounds 1985q1 to 2014q4; olsmod ecm_emploi_q ; filecoef coefmod;
+	bounds 1985q1 to 2014q4; olsmod ecm_emploi_nq; filecoef coefmod ;
+  	   // salaire moyen (par eqtp) des Q et des NQ
+	BOUNDS 1989q1 TO 2014q4; OLSMOD ecm_wq ; FILECOEF coefmod ;
+	BOUNDS 1989q1 TO 2014q4; OLSMOD ecm_wnq ; FILECOEF coefmod ;
+
+	&lklimit ;
+    simulate;	
+ 
+ 
+ 
+    
+    // ***********************************************************************************************************************
+    // ***** calcul des cales et des coefficients techniques sur le passé                                                *****
+    // ***********************************************************************************************************************
+    delaccess all; delsave ; drange;
+    access outils id .\outils; search outils ;
+    access cad     type formdata id .\bdd\don3b2L.frm   mode w; search cad;
+    ACCESS coefmod type formdata id .\bdd\mesangecoef2Lb.frm mode r ; SEARCH coefmod ;        
+      
+	// création du modèle inverse
+       usemod mesange2L ;
+               
+             &execmd "changesym exogenous @(endo_ct_ecm_new) ;";
+	   		 &execmd "changesym endogenous @(liste_pol) ;";	
+	   filemod invmesange ;
+	   lkord ;     
+
+   	// calage
+	   usemod invmesange;
+	   &lklimit;
+	   simulate;
+	   CONOPT concr 0.000000001 stop 10000; 
+	   simstart 1992q1 from 1980q1 ; dotil 2014q4 ;
+	   savesim out ;
+	   &execmd " do cad_@(liste_pol) = out_@(liste_pol)" ";" ; 
+       do check2'f(modsym("endogenous"),0.0001,"cad","out") ;  
+      
+	   
+    // vérification du calage 
+       delsave all ; delaccess all ; drange ;
+       access outils id .\outils; search outils ; 
+       ACCESS coefmod type formdata id .\bdd\mesangecoef2Lb.frm mode r; SEARCH coefmod ;
+       access cad     type formdata id .\bdd\don3b2L.frm mode r ;   search cad ;
+       usemod mesange2L;
+       &lklimit;
+       simulate;
+       CONOPT concr 0.000000001 stop 10000 ;  
+       simstart 1992q1 from 1980q1; dotil 2014q4; 
+       savesim temp;
+	   do check2'f(modsym("endogenous"),0.0001,"cad","temp") ;
+	   
+	   delaccess all; delsave all; drange;
+	  	   
+	   
+	   
+	   
+	  /*******************************************************************************/
+	  /******************   Fin de Mes3b                                **************/
+	  /*******************************************************************************/ 
